@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -52,4 +53,32 @@ func runLocalTasks(tasks []string) {
 	wg.Wait()
 	//	TODO 生成报告
 	log.Println("test done")
+}
+
+func getErr(api string, code int) string {
+	//请求错误码格式化
+	return fmt.Sprintf(`%s failed,StatusCode is %d`, api, code)
+}
+
+func getTemplate() *template.Template {
+	_func := template.FuncMap{
+		"randUser":  randUser,
+		"randRange": randRange,
+	}
+
+	t := template.New("conf")
+	t.Funcs(_func)
+	return t
+}
+
+func translate(data string) string {
+	//将模板翻译
+	tmpl := getTemplate() //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
+	wr := bytes.NewBufferString("")
+	tmpl, err := tmpl.Parse(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	tmpl.Execute(wr, nil)
+	return wr.String()
 }

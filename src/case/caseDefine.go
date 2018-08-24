@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	Url "net/url"
 	_ "strings"
 )
@@ -68,6 +69,19 @@ func (this *params) toJson() string {
 	return map2Json(this.params)
 }
 
+func (this *params) conver(method string) string {
+	//翻译转换为可请求的字符串格式
+	if method == "GET" {
+		for k, v := range this.params {
+			this.params[k] = translate(v.(string))
+		}
+		return this.encode()
+	} else {
+		rawData := this.toJson()
+		return translate(rawData)
+	}
+}
+
 func NewCaseset() *caseset {
 	return &caseset{}
 }
@@ -90,6 +104,22 @@ func (this *caseItem) addCondition(c condition) {
 	this.validate = append(this.validate, c)
 }
 
+func (this *caseItem) cover() {
+	this.validate = append(this.validate, c)
+}
+
+func (this *caseItem) buildRequest() *http.Request {
+	api := this.api
+	method := this.method
+	var data string
+	if this.params == nil {
+		data = ""
+	} else {
+
+	}
+	NewRequest(api, method, data)
+}
+
 func (this *caseset) addCaseItem(ci caseItem) {
 	this.cases = append(this.cases, ci)
 }
@@ -106,3 +136,4 @@ func (this *header) cover() string {
 
 //TODO 需要实现translate接口
 //TODO 可能需要将string转为rune
+//TODO 用例分层

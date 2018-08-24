@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"strconv"
 )
 
 type translate interface {
-	//转换接口：将含有变量与表达式的模板翻译过来
-	conver() string
+	//转换接口
+	conver(string) string        //将含有变量与表达式的模板翻译过来
+	buildRequest() *http.Request //构造请求体
 }
 
 type casePaser struct {

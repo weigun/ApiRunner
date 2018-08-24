@@ -43,6 +43,14 @@ type engine struct {
 	core *http.Client
 }
 
+type Response struct {
+	// TODO 需要加入更多的字段，用于报告生成
+	Code    int
+	Content string
+	ErrMsg  string
+	elapsed int64
+}
+
 func NewEngine() *engine {
 	makeClient(client)
 	return &engine{core: client}
@@ -56,9 +64,38 @@ func (this *engine) safeRun(r runner) {
 			debug.PrintStack()
 		}
 	}()
-	r.start()
+	r.start(this)
 }
 
-func (this *engine) runnerPool() {
-
+func (this *engine) do(request *http.Request) Response {
+	//执行请求
+	startTime := time.Now().Unix()
+	response, err := this.core.Do(request)
+	elapsed := time.Now().Unix() - startTime
+	resp := Response{elapsed: elapsed}
+	api := request.URL.String()
+	if err != nil {
+		resp.ErrMsg = err.Error()
+		if response != nil {
+			io.Copy(ioutil.Discard, response.Body)
+			response.Body.Close()
+		}
+	} else {
+		if response.StatusCode == http.StatusOK {
+			fmt.Println(request.Method, api, elapsed, response.ContentLength)
+		} else {
+			fmt.Println(request.Method, api, elapsed, getErr(api, response.StatusCode))
+		}
+		body, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			//			log.Printf("%v\n", err)
+		} else {
+			//			log.Println(string(body))
+		}
+		resp.Code = response.StatusCode
+		resp.Content = string(body)
+		response.Body.Close()
+		io.Copy(ioutil.Discard, response.Body)
+	}
+	return resp
 }

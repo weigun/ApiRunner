@@ -104,20 +104,25 @@ func (this *caseItem) addCondition(c condition) {
 	this.validate = append(this.validate, c)
 }
 
+func (this *caseItem) getConditions() []condition {
+	return this.validate
+}
+
 func (this *caseItem) cover() {
-	this.validate = append(this.validate, c)
+	//TODO 将整个ci翻译？
 }
 
 func (this *caseItem) buildRequest() *http.Request {
+	//构造请求体
 	api := this.api
 	method := this.method
 	var data string
 	if this.params == nil {
 		data = ""
 	} else {
-
+		data = this.params.conver(this.method)
 	}
-	NewRequest(api, method, data)
+	return NewRequest(api, method, data)
 }
 
 func (this *caseset) addCaseItem(ci caseItem) {

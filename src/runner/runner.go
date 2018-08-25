@@ -7,7 +7,7 @@ import (
 )
 
 type _IStata interface {
-	start()
+	start(*engine)
 	stop()
 }
 
@@ -30,5 +30,12 @@ func (this *runner) start(eng *engine) {
 		req := ci.buildRequest() //构造请求体
 		resp := eng.do(req)
 		log.Println(resp)
+		//验证结果
+		validate(resp, ci.getConditions())
+
 	}
+}
+
+func (this *runner) stop() {
+
 }

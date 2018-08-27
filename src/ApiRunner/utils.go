@@ -1,6 +1,7 @@
 package main
 
 import (
+	engine "ApiRunner/engine"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -80,5 +81,22 @@ func translate(data string) string {
 		log.Fatalln(err)
 	}
 	tmpl.Execute(wr, nil)
+	return wr.String()
+}
+
+func translateValidata(data string, resp validation) string {
+	//将模板翻译
+	tmpl := getTemplate() //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
+	wr := bytes.NewBufferString("")
+	tmpl, err := tmpl.Parse(data)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	switch resp.Body.(type) {
+	case respBodyMap:
+		tmpl.Execute(wr, resp.Body.(respBodyMap))
+	case respBodySlice:
+		tmpl.Execute(wr, resp.Body.(respBodySlice))
+	}
 	return wr.String()
 }

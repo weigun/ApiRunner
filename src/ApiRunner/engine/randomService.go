@@ -1,3 +1,5 @@
+package engine
+
 type randomService struct {
 	accountPool chan int64 //账号随机池
 	//numberPool  chan int64 //通用随机池

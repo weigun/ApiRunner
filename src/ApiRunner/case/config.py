@@ -53,12 +53,12 @@ caseset = {
 			"validate":[
 				{
 					"op" : "eq",
-					"source": "{{.body.code}}",
+					"source": "{{.Body.Code}}",
 					"verified":200,
 				},
 				{
 					"op" : "gt",
-					"source": "{{.body.data.num}}",
+					"source": "{{.Body.Data.num}}",
 					"verified":0,
 				},
 			],

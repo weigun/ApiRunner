@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
-	_ "log"
+	_ "fmt"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -21,7 +21,7 @@ func appStart() {
 }
 
 func main() {
-	parseCmd()
+	cmdArgs := parseCmd()
 	if cmdArgs.web {
 		setupHandlers()
 		appStart()

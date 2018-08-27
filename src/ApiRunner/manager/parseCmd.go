@@ -11,7 +11,7 @@ type cmdArgs struct {
 	web     bool
 }
 
-func parseCmd() {
+func parseCmd() *cmdArgs {
 	args := cmdArgs{}
 	flag.Var(&args.runCase, "run-case", "run cases,use ,to split,eg:logig,userinfo")
 	flag.Var(&args.web, "web", "web mode")
@@ -20,4 +20,5 @@ func parseCmd() {
 	for _, v := range flag.Args() {
 		fmt.Println(v)
 	}
+	return &args
 }

@@ -1,26 +1,27 @@
-package runner
+package engine
 
 import (
+	testcase "ApiRunner/case"
 	_ "fmt"
 	"log"
 	_ "strings"
 )
 
 type _IStata interface {
-	start(*engine)
+	start(*engine.Engine)
 	stop()
 }
 
-type runner struct {
+type Runner struct {
 	caseset *caseset
 	ready   chan bool //runner状态
 }
 
-func NewRunner(cs *caseset) *runner {
-	return &runner{caseset, make(chan bool, 1)}
+func NewRunner(cs *caseset) *Runner {
+	return &Runner{caseset, make(chan bool, 1)}
 }
 
-func (this *runner) start(eng *engine) {
+func (this *Runner) start(eng *Engine) {
 	//start test the testcase set
 	<-this.ready
 	log.Println("start test the testcase set")
@@ -36,6 +37,6 @@ func (this *runner) start(eng *engine) {
 	}
 }
 
-func (this *runner) stop() {
+func (this *Runner) stop() {
 
 }

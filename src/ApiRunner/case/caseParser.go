@@ -9,26 +9,26 @@ import (
 
 type translate interface {
 	//转换接口
-	conver(string) string        //将含有变量与表达式的模板翻译过来
-	buildRequest() *http.Request //构造请求体
+	Conver(string) string        //将含有变量与表达式的模板翻译过来
+	BuildRequest() *http.Request //构造请求体
 }
 
-type casePaser struct {
-	caseset *caseset
+type CasePaser struct {
+	caseset *CasePaser
 }
 
-func NewCaseParser(casePth string) *casePaser {
-	this := casePaser{}
+func NewCaseParser(casePth string) *CasePaser {
+	this := CasePaser{}
 	this.parse(casePth)
 	return &this
 
 }
 
-func (this *casePaser) getCaseset() *caseset {
+func (this *CasePaser) getCaseset() *caseset {
 	return this.caseset
 }
 
-func (this *casePaser) parse(casePth string) {
+func (this *CasePaser) parse(casePth string) {
 	//{
 	//    "name":"demo",
 	//    "host":"http://10.104.225.242:9024",

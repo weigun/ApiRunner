@@ -1,6 +1,7 @@
-package engine
+package validation
 
 import (
+	testcase "ApiRunner/case"
 	"fmt"
 	"log"
 	"strconv"
@@ -29,7 +30,6 @@ type validation struct {
 
 func validate(resp Response, conds []condition) {
 	//TODO 结果需要给报告
-	_ := resp
 	var ntr interface{}
 	contentMap := json2Map([]byte(resp.Content))
 	switch contentMap["data"].(type) {

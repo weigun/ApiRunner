@@ -1,4 +1,4 @@
-package main
+package manager
 
 import (
 	"flag"
@@ -11,10 +11,10 @@ type cmdArgs struct {
 	web     bool
 }
 
-func parseCmd() *cmdArgs {
+func ParseCmd() *cmdArgs {
 	args := cmdArgs{}
-	flag.Var(&args.runCase, "run-case", "run cases,use ,to split,eg:logig,userinfo")
-	flag.Var(&args.web, "web", "web mode")
+	flag.StringVar(&args.runCase, "run-case", "", "run cases,use ,to split,eg:logig,userinfo")
+	flag.BoolVar(&args.web, "web", false, "web mode")
 	flag.Parse()
 	fmt.Println("get Args:")
 	for _, v := range flag.Args() {

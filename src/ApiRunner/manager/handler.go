@@ -1,4 +1,4 @@
-package main
+package manager
 
 import (
 	"fmt"
@@ -21,5 +21,11 @@ func init() {
 			fmt.Println("val:", strings.Join(v, ""))
 		}
 		fmt.Fprintf(w, "Hello Wrold!") //这个写入到w的是输出到客户端的
+	}
+}
+
+func SetupHandlers() {
+	for path, handler := range handlerMap {
+		http.HandleFunc(path, handler) //设置访问的路由
 	}
 }

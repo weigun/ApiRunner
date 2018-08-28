@@ -1,61 +1,62 @@
 package testcase
 
 import (
-	"fmt"
-	"log"
+	utils "ApiRunner/utils"
+	_ "fmt"
+	_ "log"
 	Url "net/url"
 	_ "strings"
 )
 
-type header struct {
+type Header struct {
 	key, val string
 }
 
-type variables struct {
+type Variables struct {
 	name string
 	val  interface{}
 }
 
-type casesetConf struct {
+type CasesetConf struct {
 	name       string
 	host       string
-	headers    []header
-	globalVars []variables
+	headers    []Header
+	globalVars []Variables
 }
 
-type params struct {
+type Params struct {
 	params map[string]interface{}
 }
 
-type condition struct {
+type Condition struct {
 	operation string
 	source    string
 	verified  string
 }
 
-type caseItem struct {
+type CaseItem struct {
 	name    string
 	api     string
 	method  string
-	headers []header
+	headers []Header
 	params
-	validate []condition
+	validate []Condition
 }
-type caseset struct {
+type Caseset struct {
 	conf  casesetConf
 	cases []caseItem
 }
 
 const (
 	//比较操作枚举
-	eq   = "eq"
-	ne   = "ne"
-	gt   = "gt"
-	lt   = "lt"
-	regx = "regx" //正则
+	EQ   = "eq"
+	NE   = "ne"
+	GT   = "gt"
+	LT   = "lt"
+	REGX = "regx" //正则
 )
 
-func (this *params) encode() string {
+func (this *params) Encode() string {
 	//编码查询参数
 	query := Url.Values{}
 	for k, v := range this.params {
@@ -64,29 +65,29 @@ func (this *params) encode() string {
 	return query.Encode()
 }
 
-func (this *params) toJson() string {
+func (this *params) ToJson() string {
 	//转json，用于post方法
-	return map2Json(this.params)
+	return utils.Map2Json(this.params)
 }
 
-func (this *params) conver(method string) string {
+func (this *params) Conver(method string) string {
 	//翻译转换为可请求的字符串格式
 	if method == "GET" {
 		for k, v := range this.params {
-			this.params[k] = translate(v.(string))
+			this.params[k] = utils.Translate(v.(string))
 		}
-		return this.encode()
+		return this.Encode()
 	} else {
-		rawData := this.toJson()
-		return translate(rawData)
+		rawData := this.ToJson()
+		return utils.Translate(rawData)
 	}
 }
 
-func NewCaseset() *caseset {
-	return &caseset{}
+func NewCaseset() *Caseset {
+	return &Caseset{}
 }
 
-func (this *caseItem) hasHeader(key string) int {
+func (this *CaseItem) HasHeader(key string) int {
 	for i, v := range this.headers {
 		if v.key == key {
 			return i
@@ -96,23 +97,23 @@ func (this *caseItem) hasHeader(key string) int {
 
 }
 
-func (this *caseItem) addHeader(h header) {
+func (this *CaseItem) Addheader(h Header) {
 	this.headers = append(this.headers, h)
 }
 
-func (this *caseItem) addCondition(c condition) {
+func (this *CaseItem) Addcondition(c Condition) {
 	this.validate = append(this.validate, c)
 }
 
-func (this *caseItem) getConditions() []condition {
+func (this *CaseItem) Getconditions() []Condition {
 	return this.validate
 }
 
-func (this *caseItem) cover() {
+func (this *CaseItem) Cover() {
 	//TODO 将整个ci翻译？
 }
 
-func (this *caseItem) buildRequest() *http.Request {
+func (this *CaseItem) Buildrequest() *http.Request {
 	//构造请求体
 	api := this.api
 	method := this.method
@@ -120,22 +121,22 @@ func (this *caseItem) buildRequest() *http.Request {
 	if this.params == nil {
 		data = ""
 	} else {
-		data = this.params.conver(this.method)
+		data = this.params.Conver(this.method)
 	}
 	return NewRequest(api, method, data)
 }
 
-func (this *caseset) addCaseItem(ci caseItem) {
+func (this *Caseset) Addcaseitem(ci Caseitem) {
 	this.cases = append(this.cases, ci)
 }
 
-func (this *caseset) getCases() []caseItem {
+func (this *Caseset) Getcases() []Caseitem {
 	return this.cases
 }
 
 ///////////////////////////////
 //实现translate接口
-func (this *header) cover() string {
+func (this *Header) Cover() string {
 
 }
 

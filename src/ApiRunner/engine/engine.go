@@ -1,15 +1,17 @@
 package engine
 
 import (
-	"bytes"
+	utils "ApiRunner/utils"
+	_ "bytes"
 	"crypto/tls"
 	"fmt"
-	_ "io"
-	_ "io/ioutil"
+	"io"
+	"io/ioutil"
 	_ "log"
 	"net/http"
 	_ "regexp"
-	_ "time"
+	"runtime/debug"
+	"time"
 )
 
 const (
@@ -38,9 +40,9 @@ func makeClient(_client *http.Client) {
 	}
 }
 
-type engine struct {
+type Engine struct {
 	//like a webclient
-	core *http.Client
+	Core *http.Client
 }
 
 type Response struct {
@@ -51,12 +53,12 @@ type Response struct {
 	elapsed int64
 }
 
-func NewEngine() *engine {
+func NewEngine() *Engine {
 	makeClient(client)
-	return &engine{core: client}
+	return &Engine{Core: client}
 }
 
-func (this *engine) safeRun(r runner) {
+func (this *Engine) safeRun(r Runner) {
 	defer func() {
 		// don't panic
 		err := recover()
@@ -67,10 +69,10 @@ func (this *engine) safeRun(r runner) {
 	r.start(this)
 }
 
-func (this *engine) do(request *http.Request) Response {
+func (this *Engine) do(request *http.Request) Response {
 	//执行请求
 	startTime := time.Now().Unix()
-	response, err := this.core.Do(request)
+	response, err := this.Core.Do(request)
 	elapsed := time.Now().Unix() - startTime
 	resp := Response{elapsed: elapsed}
 	api := request.URL.String()

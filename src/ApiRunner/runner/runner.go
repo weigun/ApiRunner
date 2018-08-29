@@ -52,6 +52,22 @@ type Response struct {
 	elapsed int64
 }
 
+func (this *Response) GetCode() int {
+	return this.Code
+}
+
+func (this *Response) GetContent() string {
+	return this.Content
+}
+
+func (this *Response) GetErrMsg() string {
+	return this.ErrMsg
+}
+
+func (this *Response) GetElapsed() int64 {
+	return this.elapsed
+}
+
 func getErr(api string, code int) string {
 	return fmt.Sprintf(`%s failed,StatusCode is %d`, api, code)
 }

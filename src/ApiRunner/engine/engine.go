@@ -16,7 +16,6 @@ import (
 
 type engine struct {
 	testcaseChan chan testcase.PIparserInsterface
-	resultChan   chan runner.PIresponseInterface
 }
 
 var once sync.Once
@@ -24,7 +23,7 @@ var eng *engine
 
 func NewEngine() *engine {
 	once.Do(func() {
-		eng = &engine{testcaseChan: make(chan testcase.PIparserInsterface, 50), resultChan: make(chan runner.PIresponseInterface, 25)}
+		eng = &engine{testcaseChan: make(chan testcase.PIparserInsterface, 50)}
 	})
 	return eng
 }

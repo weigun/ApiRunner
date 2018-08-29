@@ -1,4 +1,15 @@
-package engine
+package validation
+
+import (
+	utils "ApiRunner/utils"
+	"log"
+	"strconv"
+)
+
+type validation struct {
+	//对应response的结构，方便进行引用
+	Body map[string]interface{}
+}
 
 //import (
 //	tils "ApiRunner/utils"

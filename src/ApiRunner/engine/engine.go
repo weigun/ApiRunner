@@ -1,62 +1,35 @@
 package engine
 
 import (
-	"bytes"
-	"crypto/tls"
-	"fmt"
+	testcase "ApiRunner/case"
+	runner "ApiRunner/runner"
+	_ "bytes"
+	_ "fmt"
 	_ "io"
 	_ "io/ioutil"
 	_ "log"
-	"net/http"
 	_ "regexp"
+	"runtime/debug"
+	"sync"
 	_ "time"
 )
 
-const (
-	timeout = 15
-	maxConn = 100 //连接池数
-)
-
-var client *http.Client
-
-func makeClient(_client *http.Client) {
-	if _client != nil {
-		return
-	}
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-		MaxIdleConnsPerHost: maxConn,
-		MaxIdleConns:        maxConn,
-		DisableCompression:  true,
-		DisableKeepAlives:   false,
-	}
-	client = &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(timeout) * time.Second,
-	}
-}
-
 type engine struct {
-	//like a webclient
-	core *http.Client
+	testcaseChan chan testcase.PIparserInsterface
+	resultChan   chan runner.PIresponseInterface
 }
 
-type Response struct {
-	// TODO 需要加入更多的字段，用于报告生成
-	Code    int
-	Content string
-	ErrMsg  string
-	elapsed int64
-}
+var once sync.Once
+var eng *engine
 
 func NewEngine() *engine {
-	makeClient(client)
-	return &engine{core: client}
+	once.Do(func() {
+		eng = &engine{testcaseChan: make(chan testcase.PIparserInsterface, 50), resultChan: make(chan runner.PIresponseInterface, 25)}
+	})
+	return eng
 }
 
-func (this *engine) safeRun(r runner) {
+func (this *engine) SafeRun(r runner.Runner) {
 	defer func() {
 		// don't panic
 		err := recover()
@@ -64,38 +37,14 @@ func (this *engine) safeRun(r runner) {
 			debug.PrintStack()
 		}
 	}()
-	r.start(this)
+	r.Start()
 }
 
-func (this *engine) do(request *http.Request) Response {
-	//执行请求
-	startTime := time.Now().Unix()
-	response, err := this.core.Do(request)
-	elapsed := time.Now().Unix() - startTime
-	resp := Response{elapsed: elapsed}
-	api := request.URL.String()
-	if err != nil {
-		resp.ErrMsg = err.Error()
-		if response != nil {
-			io.Copy(ioutil.Discard, response.Body)
-			response.Body.Close()
-		}
-	} else {
-		if response.StatusCode == http.StatusOK {
-			fmt.Println(request.Method, api, elapsed, response.ContentLength)
-		} else {
-			fmt.Println(request.Method, api, elapsed, getErr(api, response.StatusCode))
-		}
-		body, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			//			log.Printf("%v\n", err)
-		} else {
-			//			log.Println(string(body))
-		}
-		resp.Code = response.StatusCode
-		resp.Content = string(body)
-		response.Body.Close()
-		io.Copy(ioutil.Discard, response.Body)
+func (this *engine) SpawnRunner() {
+	for tsp := range this.testcaseChan {
+		go func(tsp testcase.PIparserInsterface) {
+			r := runner.NewRunner(tsp)
+			this.SafeRun(r)
+		}(tsp)
 	}
-	return resp
 }

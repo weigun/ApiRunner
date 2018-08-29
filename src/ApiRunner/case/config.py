@@ -29,37 +29,35 @@ common = {
 
 caseset = {
 	"name" : "demo",
-	"host" : host,
-	"headers" : {
-		"auth" : "asdasda456789",
-		"type" : "json",
+	"host" : "https://www.ixbow.com/",
+	"headers": {
+		"Content-Type": "application/json",
+		"Authorization": ""
 	},
 	"globalVars":{
-		"token" : "{{getToken}}",
+		"token" : "{%^&*",
 		"sid" :1
 	},
 	"cases":[
 		{
 			"name":"login",
-			"api": "/api/user/userinfo",
-			"method":"GET",
-			"headers": {
-				"cache": True,
-			},
-			"params":{
-				"time":time.time()
-				"cid":"{{getRand 50 55}}"
-			},
+			"api": common["login"]["api"],
+			"method":"POST",
+			# "params":{
+			# 	"username":"{{randUser}}",
+			# 	"loginType":"0"
+			# },
+			"params":common["login"]["param"],
 			"validate":[
 				{
 					"op" : "eq",
 					"source": "{{.Body.Code}}",
-					"verified":200,
+					"verified":"200",
 				},
 				{
 					"op" : "gt",
-					"source": "{{.Body.Data.num}}",
-					"verified":0,
+					"source": "{{.Body.Data.firstTime}}",
+					"verified":"1",
 				},
 			],
 

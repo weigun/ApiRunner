@@ -1,4 +1,4 @@
-package main
+package manager
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 var handlerMap = make(map[string]func(http.ResponseWriter, *http.Request)) //路由处理器
 
-func init() {
+func SetupHandlers() {
 	handlerMap["/hello"] = func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()       //解析参数，默认是不会解析的
 		fmt.Println(r.Form) //这些信息是输出到服务器端的打印信息
@@ -21,5 +21,10 @@ func init() {
 			fmt.Println("val:", strings.Join(v, ""))
 		}
 		fmt.Fprintf(w, "Hello Wrold!") //这个写入到w的是输出到客户端的
+	}
+	///////////////////////////////////
+	//	注册处理器
+	for path, handler := range handlerMap {
+		http.HandleFunc(path, handler) //设置访问的路由
 	}
 }

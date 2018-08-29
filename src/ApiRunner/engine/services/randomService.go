@@ -1,4 +1,11 @@
-package engine
+package services
+
+import (
+	"math/rand"
+	"strconv"
+	"sync"
+	"time"
+)
 
 type randomService struct {
 	accountPool chan int64 //账号随机池
@@ -31,10 +38,10 @@ func NewRandomService() *randomService {
 
 func (this *randomService) generateAccount() {
 	//账号生成
-	this.accountPool <- this.getRand(0, maxAccoun)
+	this.accountPool <- this.GetRand(0, maxAccoun)
 }
 
-func (this *randomService) getRand(min, max int64) int64 {
+func (this *randomService) GetRand(min, max int64) int64 {
 	//获取一个[min,max]的随机数
 	if min >= max {
 		return max
@@ -44,7 +51,7 @@ func (this *randomService) getRand(min, max int64) int64 {
 	}
 }
 
-func (this *randomService) getAccount() string {
+func (this *randomService) GetAccount() string {
 	//获取一个随机账号
 	return strconv.FormatInt(<-this.accountPool, 10)
 }

@@ -1,94 +1,99 @@
 package testcase
 
 import (
+	utils "ApiRunner/utils"
+	"bytes"
 	"fmt"
-	"log"
+	_ "fmt"
+	_ "log"
+	"net/http"
 	Url "net/url"
 	_ "strings"
 )
 
-type header struct {
-	key, val string
+type Header struct {
+	Key, Val string
 }
 
-type variables struct {
-	name string
-	val  interface{}
+type Variables struct {
+	Name string
+	Val  interface{}
 }
 
-type casesetConf struct {
-	name       string
-	host       string
-	headers    []header
-	globalVars []variables
+type CasesetConf struct {
+	Name       string
+	Host       string
+	Headers    []Header
+	GlobalVars []Variables
 }
 
-type params struct {
-	params map[string]interface{}
+type Params struct {
+	Params map[string]interface{}
 }
 
-type condition struct {
-	operation string
-	source    string
-	verified  string
+type Condition struct {
+	Op       string
+	Source   string
+	Verified string
 }
 
-type caseItem struct {
-	name    string
-	api     string
-	method  string
-	headers []header
-	params
-	validate []condition
+type CaseItem struct {
+	Name    string
+	Api     string
+	Method  string
+	Headers []Header
+	Params
+	Validate []Condition
 }
-type caseset struct {
-	conf  casesetConf
-	cases []caseItem
+type Caseset struct {
+	Conf  CasesetConf
+	Cases []CaseItem
 }
 
 const (
 	//比较操作枚举
-	eq   = "eq"
-	ne   = "ne"
-	gt   = "gt"
-	lt   = "lt"
-	regx = "regx" //正则
+	EQ   = "eq"
+	NE   = "ne"
+	GT   = "gt"
+	LT   = "lt"
+	REGX = "regx" //正则
 )
 
-func (this *params) encode() string {
+func (this *Params) Encode() string {
 	//编码查询参数
 	query := Url.Values{}
-	for k, v := range this.params {
+	for k, v := range this.Params {
 		query.Add(k, v.(string))
 	}
 	return query.Encode()
 }
 
-func (this *params) toJson() string {
+func (this *Params) ToJson() string {
 	//转json，用于post方法
-	return map2Json(this.params)
+	return utils.Map2Json(this.Params)
 }
 
-func (this *params) conver(method string) string {
+func (this *Params) Conver(method string) string {
 	//翻译转换为可请求的字符串格式
+	tmpl := utils.GetTemplate(getFuncMap())
 	if method == "GET" {
-		for k, v := range this.params {
-			this.params[k] = translate(v.(string))
+		for k, v := range this.Params {
+			this.Params[k] = utils.Translate(tmpl, v.(string))
 		}
-		return this.encode()
+		return this.Encode()
 	} else {
-		rawData := this.toJson()
-		return translate(rawData)
+		rawData := this.ToJson()
+		return utils.Translate(tmpl, rawData)
 	}
 }
 
-func NewCaseset() *caseset {
-	return &caseset{}
+func NewCaseset() *Caseset {
+	return &Caseset{}
 }
 
-func (this *caseItem) hasHeader(key string) int {
-	for i, v := range this.headers {
-		if v.key == key {
+func (this *CaseItem) HasHeader(key string) int {
+	for i, v := range this.Headers {
+		if v.Key == key {
 			return i
 		}
 	}
@@ -96,47 +101,59 @@ func (this *caseItem) hasHeader(key string) int {
 
 }
 
-func (this *caseItem) addHeader(h header) {
-	this.headers = append(this.headers, h)
+func (this *CaseItem) AddHeader(h Header) {
+	this.Headers = append(this.Headers, h)
 }
 
-func (this *caseItem) addCondition(c condition) {
-	this.validate = append(this.validate, c)
+func (this *CaseItem) AddCondition(c Condition) {
+	this.Validate = append(this.Validate, c)
 }
 
-func (this *caseItem) getConditions() []condition {
-	return this.validate
+func (this *CaseItem) GetConditions() []Condition {
+	return this.Validate
 }
 
-func (this *caseItem) cover() {
+func (this *CaseItem) cover() {
 	//TODO 将整个ci翻译？
 }
 
-func (this *caseItem) buildRequest() *http.Request {
+func (this *CaseItem) BuildRequest() *http.Request {
 	//构造请求体
-	api := this.api
-	method := this.method
+	fmt.Println(this)
+	api := this.Api
+	method := this.Method
 	var data string
-	if this.params == nil {
+	if len(this.Params.Params) == 0 {
 		data = ""
 	} else {
-		data = this.params.conver(this.method)
+		data = this.Params.Conver(this.Method)
 	}
-	return NewRequest(api, method, data)
+	fmt.Println(data)
+	bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
+	req, err := http.NewRequest(method, api, bodyData)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println(req)
+	for _, h := range this.Headers {
+		fmt.Println("-------------", h)
+		req.Header.Add(h.Key, h.Val)
+	}
+	return req
 }
 
-func (this *caseset) addCaseItem(ci caseItem) {
-	this.cases = append(this.cases, ci)
+func (this *Caseset) AddCaseItem(ci CaseItem) {
+	this.Cases = append(this.Cases, ci)
 }
 
-func (this *caseset) getCases() []caseItem {
-	return this.cases
+func (this *Caseset) GetCases() []CaseItem {
+	return this.Cases
 }
 
 ///////////////////////////////
 //实现translate接口
-func (this *header) cover() string {
-
+func (this *Header) cover() string {
+	return ""
 }
 
 //TODO 需要实现translate接口

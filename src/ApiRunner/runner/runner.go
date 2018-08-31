@@ -2,6 +2,7 @@ package runner
 
 import (
 	testcase "ApiRunner/case"
+	validation "ApiRunner/validation"
 	_ "bytes"
 	"crypto/tls"
 	"fmt"
@@ -42,30 +43,7 @@ func makeClient(_client *http.Client) {
 type Runner struct {
 	Core     *http.Client
 	Testcase testcase.PIparserInsterface
-	Ready    chan bool //runner状态
-}
-type Response struct {
-	// TODO 需要加入更多的字段，用于报告生成
-	Code    int
-	Content string
-	ErrMsg  string
-	elapsed int64
-}
-
-func (this *Response) GetCode() int {
-	return this.Code
-}
-
-func (this *Response) GetContent() string {
-	return this.Content
-}
-
-func (this *Response) GetErrMsg() string {
-	return this.ErrMsg
-}
-
-func (this *Response) GetElapsed() int64 {
-	return this.elapsed
+	Ready    chan bool //runner状态,如果true，则表明是web模式，false则是本地模式
 }
 
 func getErr(api string, code int) string {
@@ -79,19 +57,24 @@ func NewRunner(cs testcase.PIparserInsterface) Runner {
 
 func (this *Runner) Start() {
 	//start test the testcase set
-	<-this.Ready
+	status := <-this.Ready
 	log.Println("start test the testcase set")
 	caseName := this.Testcase.GetCaseset().Conf.Name
 	log.Println(caseName)
+	resPool := validation.NewResultPool()
 	for i, ci := range this.Testcase.GetCaseset().GetCases() {
 		//顺序执行用例
 		fmt.Printf("testcase %d\n", i)
 		req := ci.BuildRequest() //构造请求体
 		resp := this.doRequest(req)
+		ts := this.Testcase
 		log.Println(resp)
-		//验证结果
-		//		validate(resp, ci.GetConditions())
+		resPool.Push(validation.ResultItem{ts, resp}) //推送到结果池进行验证
 
+	}
+	if !status {
+		log.Println("testcase", caseName, "finished ", "waiting for result to finish")
+		resPool.WaitForDone()
 	}
 }
 
@@ -99,12 +82,12 @@ func (this *Runner) stop() {
 
 }
 
-func (this *Runner) doRequest(request *http.Request) Response {
+func (this *Runner) doRequest(request *http.Request) validation.Response {
 	//执行请求
 	startTime := time.Now().Unix()
 	response, err := this.Core.Do(request)
 	elapsed := time.Now().Unix() - startTime
-	resp := Response{elapsed: elapsed}
+	resp := validation.Response{Elapsed: elapsed}
 	api := request.URL.String()
 	if err != nil {
 		resp.ErrMsg = err.Error()

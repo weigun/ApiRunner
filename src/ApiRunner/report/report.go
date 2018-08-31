@@ -1,10 +1,10 @@
 package report
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	"path/filepath"
-	"sync"
+	_ "encoding/json"
+	_ "fmt"
+	_ "log"
+	_ "os"
+	_ "path/filepath"
+	_ "sync"
 )

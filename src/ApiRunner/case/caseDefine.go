@@ -50,15 +50,6 @@ type Caseset struct {
 	Cases []CaseItem
 }
 
-const (
-	//比较操作枚举
-	EQ   = "eq"
-	NE   = "ne"
-	GT   = "gt"
-	LT   = "lt"
-	REGX = "regx" //正则
-)
-
 func (this *Params) Encode() string {
 	//编码查询参数
 	query := Url.Values{}
@@ -78,12 +69,12 @@ func (this *Params) Conver(method string) string {
 	tmpl := utils.GetTemplate(getFuncMap())
 	if method == "GET" {
 		for k, v := range this.Params {
-			this.Params[k] = utils.Translate(tmpl, v.(string))
+			this.Params[k] = utils.Translate(tmpl, v.(string), nil)
 		}
 		return this.Encode()
 	} else {
 		rawData := this.ToJson()
-		return utils.Translate(tmpl, rawData)
+		return utils.Translate(tmpl, rawData, nil)
 	}
 }
 

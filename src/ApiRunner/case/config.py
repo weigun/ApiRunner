@@ -51,13 +51,23 @@ caseset = {
 			"validate":[
 				{
 					"op" : "eq",
-					"source": "{{.Body.Code}}",
+					"source": "{{.body.code}}",
 					"verified":"200",
 				},
 				{
 					"op" : "gt",
-					"source": "{{.Body.Data.firstTime}}",
-					"verified":"1",
+					"source": "{{.body.data.firstTime}}",
+					"verified":"0",
+				},
+				{
+					"op" : "ne",
+					"source": "{{.body.data.token}}",
+					"verified":"",
+				},
+				{
+					"op" : "regx",
+					"source": "{{.body.code}}}",
+					"verified":"\d+",
 				},
 			],
 

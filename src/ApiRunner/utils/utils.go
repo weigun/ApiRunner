@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"text/template"
 )
 
@@ -61,6 +62,10 @@ func GetCwd() string {
 //	return fmt.Sprintf(`%s failed,StatusCode is %d`, api, code)
 //}
 
+type dataInterface interface {
+	GetData() map[string]interface{}
+}
+
 func GetTemplate(_func *template.FuncMap) *template.Template {
 	t := template.New("conf")
 	if _func != nil {
@@ -69,14 +74,19 @@ func GetTemplate(_func *template.FuncMap) *template.Template {
 	return t //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
 }
 
-func Translate(tmpl *template.Template, data string) string {
+func Translate(tmpl *template.Template, tmplStr string, obj dataInterface) string {
 	//将模板翻译
 	wr := bytes.NewBufferString("")
-	tmpl, err := tmpl.Parse(data)
+	tmpl, err := tmpl.Parse(tmplStr)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	tmpl.Execute(wr, nil)
+	if obj == nil {
+		tmpl.Execute(wr, nil)
+	} else {
+		log.Println("===============", obj, obj.GetData())
+		tmpl.Execute(wr, obj.GetData())
+	}
 	return wr.String()
 }
 
@@ -96,3 +106,23 @@ func Translate(tmpl *template.Template, data string) string {
 //	}
 //	return wr.String()
 //}
+
+func ToNumber(a interface{}) interface{} {
+	switch a.(type) {
+	case int, float64:
+		return a
+	case string:
+		a := a.(string)
+		i, err := strconv.ParseInt(a, 10, 64)
+		if err != nil {
+			i, err := strconv.ParseFloat(a, 64)
+			if err != nil {
+				return nil
+			}
+			return i
+		}
+		return i
+	default:
+		return nil
+	}
+}

@@ -34,9 +34,9 @@ func runLocalTasks(tasks []string) {
 		rn := runner.NewRunner(caseParser)
 		wg.Add(1)
 		go func(rn runner.Runner) {
-			defer wg.Done()  //TODO 可能需要放在safeRun下一行
-			rn.Ready <- true //缓冲chan
-			rn.Start()       //TODO 需要转为安全模式
+			defer wg.Done()   //TODO 可能需要放在safeRun下一行
+			rn.Ready <- false //缓冲chan
+			rn.Start()        //TODO 需要转为安全模式
 			//			eng.SafeRun(rn)
 		}(rn) //copy rn
 	}

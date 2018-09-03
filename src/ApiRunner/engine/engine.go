@@ -2,6 +2,7 @@ package engine
 
 import (
 	testcase "ApiRunner/case"
+	report "ApiRunner/report"
 	runner "ApiRunner/runner"
 	_ "bytes"
 	_ "fmt"
@@ -24,6 +25,7 @@ var eng *engine
 func NewEngine() *engine {
 	once.Do(func() {
 		eng = &engine{testcaseChan: make(chan testcase.PIparserInsterface, 50)}
+		report.InitItemCache()
 	})
 	return eng
 }

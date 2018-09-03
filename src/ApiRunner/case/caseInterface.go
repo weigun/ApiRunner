@@ -34,4 +34,5 @@ type CasesetInterface interface {
 
 type PIparserInsterface interface {
 	GetCaseset() *Caseset
+	GetUid() uint32
 }

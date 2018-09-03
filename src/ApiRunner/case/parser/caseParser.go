@@ -4,6 +4,7 @@ import (
 	caseMod "ApiRunner/case"
 	utils "ApiRunner/utils"
 	"fmt"
+	"hash/crc32"
 	"io/ioutil"
 	_ "net/http"
 	"strconv"
@@ -12,17 +13,23 @@ import (
 
 type casePaser struct {
 	Caseset *caseMod.Caseset
+	Uid     uint32
 }
 
 func NewCaseParser(casePth string) *casePaser {
-	this := casePaser{caseMod.NewCaseset()}
+	this := casePaser{Caseset: caseMod.NewCaseset()}
 	this.parse(casePth)
+	this.Uid = crc32.ChecksumIEEE([]byte(this.Caseset.Conf.Name))
 	return &this
 
 }
 
 func (this *casePaser) GetCaseset() *caseMod.Caseset {
 	return this.Caseset
+}
+
+func (this *casePaser) GetUid() uint32 {
+	return this.Uid
 }
 
 func (this *casePaser) parse(casePath string) {
@@ -145,6 +152,7 @@ func (this *casePaser) parse(casePath string) {
 		fmt.Println("add caseItem:", ci)
 	}
 	//TODO 可能需要将string转为rune
+	//TODO 用例需要池化，全局都可以能拿得到
 	fmt.Println("===============", this.Caseset)
 
 }

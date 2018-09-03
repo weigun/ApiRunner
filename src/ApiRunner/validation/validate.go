@@ -1,9 +1,11 @@
 package validation
 
 import (
+	"time"
 	//	"time"
 	//	report "ApiRunner/report"
 	testcase "ApiRunner/case"
+	report "ApiRunner/report"
 	utils "ApiRunner/utils"
 	"log"
 	"regexp"
@@ -43,16 +45,17 @@ func (this Response) GetElapsed() int64 {
 }
 
 type ResultItem struct {
-	Tsp testcase.PIparserInsterface
-	Res PIresponseInterface
+	Tsp   testcase.PIparserInsterface
+	index int64
+	Res   PIresponseInterface
 }
 
-type validation struct {
+type validator struct {
 	//对应response的结构，方便进行引用
 	Body map[string]interface{}
 }
 
-func (this validation) GetData() map[string]interface{} {
+func (this validator) GetData() map[string]interface{} {
 	//实现dataInterface接口
 	return map[string]interface{}{"body": this.Body}
 }
@@ -157,12 +160,12 @@ func (this *ResultPool) Shift() ResultItem {
 }
 
 func (this *ResultPool) handleResult() {
-	//TODO 需要将处理结果转交给report模块
 	for resItem := range this.resultChan {
 		handle(resItem)
 	}
 	log.Println("all results came out,ready to done")
-	//	time.Sleep(time.Duration(10) * time.Second)
+	log.Println("generate report")
+
 	this.doneChan <- true
 }
 
@@ -174,39 +177,57 @@ func (this *ResultPool) WaitForDone() {
 
 /*
 私有函数
-主要是作用是对模板进行转译
 */
 func handle(resItem ResultItem) {
+	//结果处理函数
+	//TODO 各种log需要集中到log中心，因为在报表性需要查看log信息
 	log.Println("resItem:", resItem)
-	res := resItem.Res //response obj
-	tsp := resItem.Tsp //testCaseParser obj
+	res := resItem.Res     //response obj
+	tsp := resItem.Tsp     //testCaseParser obj
+	index := resItem.index //用例的索引
 	contentMap := utils.Json2Map([]byte(res.GetContent()))
 	log.Printf("contentMap is %T\n", contentMap)
-	vali := validation{contentMap}
+	vali := validator{contentMap}
 	tmpl := utils.GetTemplate(nil)
-	for _, caseItem := range tsp.GetCaseset().GetCases() {
-		for _, cond := range caseItem.Validate {
-			log.Println("----------", cond)
-			compareData := utils.Translate(tmpl, cond.Source, vali)
-			log.Println(compareData)
-			assert := NewAssert(compareData)
-			switch cond.Op {
-			case EQ:
-				ret := assert.Equal(cond.Verified)
-				log.Println(cond, ret, compareData, cond.Verified)
-			case GT:
-				ret := assert.GreaterThan(cond.Verified)
-				log.Println(cond, ret, compareData, cond.Verified)
-			case LT:
-				ret := assert.LessThan(cond.Verified)
-				log.Println(cond, ret, compareData, cond.Verified)
-			case NE:
-				ret := !assert.Equal(cond.Verified)
-				log.Println(cond, ret, compareData, cond.Verified)
-			case REGX:
-				ret := !assert.Regx(cond.Verified)
-				log.Println(cond, ret, compareData, cond.Verified)
-			}
+	cn := report.CaseNum{}
+	caseItem := tsp.GetCassset().Getcases()[index]
+	record := report.Record{Status: res.Code == 200, Api: caseItem.Api, Elapsed: res.Elapsed, Traceback: "coming soon"}
+	makeDetail(&record)
+	//	for _, caseItem := range tsp.GetCaseset().GetCases() {
+	for _, cond := range caseItem.Validate {
+		log.Println("----------", cond)
+		compareData := utils.Translate(tmpl, cond.Source, vali)
+		log.Println(compareData)
+		assert := NewAssert(compareData)
+		var ret bool
+		switch cond.Op {
+		case EQ:
+			ret = assert.Equal(cond.Verified)
+			log.Println(cond, ret, compareData, cond.Verified)
+		case GT:
+			ret = assert.GreaterThan(cond.Verified)
+			log.Println(cond, ret, compareData, cond.Verified)
+		case LT:
+			ret = assert.LessThan(cond.Verified)
+			log.Println(cond, ret, compareData, cond.Verified)
+		case NE:
+			ret = !assert.Equal(cond.Verified)
+			log.Println(cond, ret, compareData, cond.Verified)
+		case REGX:
+			ret = !assert.Regx(cond.Verified)
+			log.Println(cond, ret, compareData, cond.Verified)
+		}
+		if ret {
+			cn.Successes++
+		} else {
+			cn.Failures++
 		}
 	}
+	//	}
+	cn.TotalCases = cn.Successes + cn.Failures
+	cn.Add2Cache(tsp.GetUid())
+}
+
+func makeDetail(record *report.Record) {
+
 }

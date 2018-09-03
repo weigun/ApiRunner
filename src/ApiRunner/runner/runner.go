@@ -2,6 +2,8 @@ package runner
 
 import (
 	testcase "ApiRunner/case"
+	report "ApiRunner/report"
+	utils "ApiRunner/utils"
 	validation "ApiRunner/validation"
 	_ "bytes"
 	"crypto/tls"
@@ -22,6 +24,7 @@ const (
 var client *http.Client
 
 func makeClient(_client *http.Client) {
+	//TODO 可能非线程安全，需要改为once.DO方式
 	if _client != nil {
 		return
 	}
@@ -59,8 +62,12 @@ func (this *Runner) Start() {
 	//start test the testcase set
 	status := <-this.Ready
 	log.Println("start test the testcase set")
+	s := report.Summary{Title: utils.GetDateTime(), StartTime: time.Now().Unix()}
+	s.Add2Cache(this.Testcase.GetUid())
 	caseName := this.Testcase.GetCaseset().Conf.Name
 	log.Println(caseName)
+	info := report.Info{caseName, this.Testcase.GetCaseset().Conf.Host}
+	info.Add2Cache(this.Testcase.GetUid())
 	resPool := validation.NewResultPool()
 	for i, ci := range this.Testcase.GetCaseset().GetCases() {
 		//顺序执行用例
@@ -69,7 +76,8 @@ func (this *Runner) Start() {
 		resp := this.doRequest(req)
 		ts := this.Testcase
 		log.Println(resp)
-		resPool.Push(validation.ResultItem{ts, resp}) //推送到结果池进行验证
+		resPool.Push(validation.ResultItem{ts, i, resp}) //推送到结果池进行验证
+		//TODO 各种log需要集中到log中心，因为在报表性需要查看log信息
 
 	}
 	if !status {

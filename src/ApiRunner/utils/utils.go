@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"text/template"
+	"time"
 )
 
 func Map2Json(m map[string]interface{}) string {
@@ -125,4 +126,9 @@ func ToNumber(a interface{}) interface{} {
 	default:
 		return nil
 	}
+}
+
+func GetDateTime() string {
+	timeStamp := time.Now().Unix()
+	return time.Unix(timeStamp, 0).Format("20060102_150405")
 }

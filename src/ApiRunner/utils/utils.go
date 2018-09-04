@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	_ "fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -27,6 +29,27 @@ func Json2Map(js []byte) map[string]interface{} {
 		return mapResult
 	}
 	return mapResult
+}
+
+func Params2Map(s string) map[string]interface{} {
+	// 将id=1&name=weigun这种形式的参数转为map
+	m := make(map[string]interface{})
+	for _, para := range strings.Split(s, "&") {
+		pSlice := strings.Split(para, "=")
+		if len(pSlice) == 2 {
+			m[pSlice[0]] = pSlice[1]
+		}
+	}
+	return m
+}
+
+func Header2Json(h http.Header) string {
+	//map[string][]string
+	m := make(map[string]interface{})
+	for k, v := range h {
+		m[k] = v
+	}
+	return Map2Json(m)
 }
 
 func GetCwd() string {

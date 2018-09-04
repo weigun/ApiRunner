@@ -14,7 +14,7 @@ type PItranslate interface {
 }
 
 type PIrequest interface {
-	Buildrequest() *http.Request //构造请求体
+	BuildRequest() *http.Request //构造请求体
 }
 
 type ParamsInterface interface {

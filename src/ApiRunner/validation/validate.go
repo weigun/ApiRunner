@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"io/ioutil"
 	"time"
 	//	"time"
 	//	report "ApiRunner/report"
@@ -8,6 +9,7 @@ import (
 	report "ApiRunner/report"
 	utils "ApiRunner/utils"
 	"log"
+	"net/http"
 	"regexp"
 	"strconv"
 	"sync"
@@ -18,6 +20,7 @@ type PIresponseInterface interface {
 	GetContent() string
 	GetErrMsg() string
 	GetElapsed() int64
+	GetHeader() http.Header
 }
 
 type Response struct {
@@ -26,6 +29,7 @@ type Response struct {
 	Content string
 	ErrMsg  string
 	Elapsed int64
+	Header  http.Header
 }
 
 func (this Response) GetCode() int {
@@ -44,9 +48,13 @@ func (this Response) GetElapsed() int64 {
 	return this.Elapsed
 }
 
+func (this Response) GetHeader() http.Header {
+	return this.Header
+}
+
 type ResultItem struct {
 	Tsp   testcase.PIparserInsterface
-	index int64
+	Index int64
 	Res   PIresponseInterface
 }
 
@@ -169,10 +177,15 @@ func (this *ResultPool) handleResult() {
 	this.doneChan <- true
 }
 
-func (this *ResultPool) WaitForDone() {
+func (this *ResultPool) WaitForDone(uid uint32) {
 	close(this.resultChan)
 	log.Println("resultChan closed,WaitForDone")
 	<-this.doneChan
+	log.Println("add footer:", uid)
+	var footer report.Footer
+	_ = time.Second
+	//	time.Sleep(time.Duration(3) * time.Second)
+	footer.Add2Cache(uid)
 }
 
 /*
@@ -184,17 +197,23 @@ func handle(resItem ResultItem) {
 	log.Println("resItem:", resItem)
 	res := resItem.Res     //response obj
 	tsp := resItem.Tsp     //testCaseParser obj
-	index := resItem.index //用例的索引
+	index := resItem.Index //用例的索引
 	contentMap := utils.Json2Map([]byte(res.GetContent()))
 	log.Printf("contentMap is %T\n", contentMap)
 	vali := validator{contentMap}
 	tmpl := utils.GetTemplate(nil)
 	cn := report.CaseNum{}
-	caseItem := tsp.GetCassset().Getcases()[index]
-	record := report.Record{Status: res.Code == 200, Api: caseItem.Api, Elapsed: res.Elapsed, Traceback: "coming soon"}
-	makeDetail(&record)
-	//	for _, caseItem := range tsp.GetCaseset().GetCases() {
-	for _, cond := range caseItem.Validate {
+	caseItem := tsp.GetCaseset().GetCases()[index]
+	record := report.Record{Status: res.GetCode() == 200, Api: caseItem.Api, Elapsed: res.GetElapsed(), Traceback: "coming soon"}
+	makeDetail(&record, &caseItem, res, tsp.GetUid())
+	//	detail.Add2Cache(tsp.GetUid())
+	for _, cond := range caseItem.GetConditions() {
+		//handle Validators
+		//	type Validator struct {
+		//	Check      bool
+		//	Comparator string
+		//	Expect     string
+		//	Actual     string
 		log.Println("----------", cond)
 		compareData := utils.Translate(tmpl, cond.Source, vali)
 		log.Println(compareData)
@@ -203,31 +222,63 @@ func handle(resItem ResultItem) {
 		switch cond.Op {
 		case EQ:
 			ret = assert.Equal(cond.Verified)
-			log.Println(cond, ret, compareData, cond.Verified)
+			//			log.Println(cond, ret, compareData, cond.Verified)
 		case GT:
 			ret = assert.GreaterThan(cond.Verified)
-			log.Println(cond, ret, compareData, cond.Verified)
+			//			log.Println(cond, ret, compareData, cond.Verified)
 		case LT:
 			ret = assert.LessThan(cond.Verified)
-			log.Println(cond, ret, compareData, cond.Verified)
+			//			log.Println(cond, ret, compareData, cond.Verified)
 		case NE:
 			ret = !assert.Equal(cond.Verified)
-			log.Println(cond, ret, compareData, cond.Verified)
+			//			log.Println(cond, ret, compareData, cond.Verified)
 		case REGX:
 			ret = !assert.Regx(cond.Verified)
-			log.Println(cond, ret, compareData, cond.Verified)
+			//			log.Println(cond, ret, compareData, cond.Verified)
 		}
 		if ret {
 			cn.Successes++
 		} else {
 			cn.Failures++
 		}
+		valtor := report.Validator{ret, cond.Op, cond.Verified, compareData}
+		//		valtor.Add2Cache(tsp.GetUid())
+		record.Detail.Validators = append(record.Detail.Validators, valtor)
 	}
-	//	}
 	cn.TotalCases = cn.Successes + cn.Failures
+	log.Println("cn:", cn)
 	cn.Add2Cache(tsp.GetUid())
+	record.Add2Cache(tsp.GetUid())
 }
 
-func makeDetail(record *report.Record) {
+func makeDetail(record *report.Record, ci testcase.PIrequest, res PIresponseInterface, uid uint32) {
+	detail := report.ExecuteDetail{}
+	req := ci.BuildRequest()
+	bs, _ := ioutil.ReadAll(req.Body)
+	s := string(bs)
+	log.Println("requestBody:", s)
+	//s可以是json，也可以是&参数的方式，最后一种是纯字符串
+	//都需要转为map结构
+	detail.RequestData = make(map[string]string)
+	detail.ResponseData = make(map[string]string)
+	if req.Method == "GET" {
+		m := utils.Params2Map(s)
+		if len(m) == 0 {
+			//纯字符串
+			detail.RequestData["body"] = s
+		} else {
+			detail.RequestData["body"] = utils.Map2Json(m)
+		}
+	} else {
+		//post方法
+		detail.RequestData["body"] = s
+	}
+	detail.RequestData["header"] = utils.Header2Json(res.GetHeader())
+	//request data finished
+	//handle response
+	detail.ResponseData["header"] = utils.Header2Json(res.GetHeader())
+	detail.ResponseData["body"] = res.GetContent()
+	log.Println("----------detail:", detail)
+	record.Detail = detail
 
 }

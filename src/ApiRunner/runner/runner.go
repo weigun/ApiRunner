@@ -76,13 +76,13 @@ func (this *Runner) Start() {
 		resp := this.doRequest(req)
 		ts := this.Testcase
 		log.Println(resp)
-		resPool.Push(validation.ResultItem{ts, i, resp}) //推送到结果池进行验证
+		resPool.Push(validation.ResultItem{ts, int64(i), resp}) //推送到结果池进行验证
 		//TODO 各种log需要集中到log中心，因为在报表性需要查看log信息
 
 	}
 	if !status {
 		log.Println("testcase", caseName, "finished ", "waiting for result to finish")
-		resPool.WaitForDone()
+		resPool.WaitForDone(this.Testcase.GetUid())
 	}
 }
 
@@ -95,7 +95,7 @@ func (this *Runner) doRequest(request *http.Request) validation.Response {
 	startTime := time.Now().Unix()
 	response, err := this.Core.Do(request)
 	elapsed := time.Now().Unix() - startTime
-	resp := validation.Response{Elapsed: elapsed}
+	resp := validation.Response{Elapsed: elapsed, Header: response.Header}
 	api := request.URL.String()
 	if err != nil {
 		resp.ErrMsg = err.Error()

@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 func appStart() {
@@ -43,6 +44,7 @@ func runLocalTasks(tasks []string) {
 	wg.Wait()
 	//	TODO 生成报告
 	log.Println("test done")
+	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func main() {

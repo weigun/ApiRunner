@@ -3,6 +3,7 @@ package validation
 import (
 	"io/ioutil"
 	"time"
+	_ "time"
 	//	"time"
 	//	report "ApiRunner/report"
 	testcase "ApiRunner/case"
@@ -132,7 +133,7 @@ func NewAssert(rawData string) *Assert {
 type ResultPool struct {
 	//	testcaseChan chan testcase.PIparserInsterface
 	resultChan chan ResultItem
-	doneChan   chan bool //just for local mode,not web
+	doneChan   chan uint32 //just for local mode,not web
 }
 
 const (
@@ -150,10 +151,25 @@ var resPool *ResultPool
 func NewResultPool() *ResultPool {
 	once.Do(func() {
 		log.Println("ResultPool init")
-		resPool = &ResultPool{make(chan ResultItem, 100), make(chan bool)}
+		resPool = &ResultPool{make(chan ResultItem, 100), make(chan uint32, 64)}
 		//用一个新的go程来专门处理结果
 		go func() {
-			resPool.handleResult()
+			for {
+				select {
+				case resItem := <-resPool.resultChan:
+					log.Println("handle item---------------")
+					handle(resItem)
+				case uid := <-resPool.doneChan:
+					log.Println("all case done")
+					//收到用例跑完消息，2s后再告诉报表开始生成，暂时避免异步的问题
+					time.AfterFunc(time.Duration(2)*time.Second, func() {
+						log.Println("generateing report")
+						var footer report.Footer
+						footer.Add2Cache(uid)
+					})
+				}
+			}
+			//			resPool.handleResult()
 		}()
 	})
 	return resPool
@@ -174,18 +190,20 @@ func (this *ResultPool) handleResult() {
 	log.Println("all results came out,ready to done")
 	log.Println("generate report")
 
-	this.doneChan <- true
+	//	this.doneChan <- true
 }
 
-func (this *ResultPool) WaitForDone(uid uint32) {
-	close(this.resultChan)
-	log.Println("resultChan closed,WaitForDone")
-	<-this.doneChan
-	log.Println("add footer:", uid)
-	var footer report.Footer
-	_ = time.Second
-	//	time.Sleep(time.Duration(3) * time.Second)
-	footer.Add2Cache(uid)
+func (this *ResultPool) Done(uid uint32) {
+	this.doneChan <- uid
+	//	close(this.resultChan)
+	//	log.Println("resultChan closed,WaitForDone")
+	//	<-this.doneChan
+	//	log.Println("add footer:", uid)
+	//	var footer report.Footer
+	//	_ = time.Second
+	//	//	time.Sleep(time.Duration(3) * time.Second)
+	//	footer.Add2Cache(uid)
+	//	// TODO 因为是异步，所以有概率会出现，先收到footer再收到record的情况，导致报表内容为空的问题，需要修改
 }
 
 /*
@@ -194,7 +212,7 @@ func (this *ResultPool) WaitForDone(uid uint32) {
 func handle(resItem ResultItem) {
 	//结果处理函数
 	//TODO 各种log需要集中到log中心，因为在报表性需要查看log信息
-	log.Println("resItem:", resItem)
+	//	log.Println("resItem:", resItem)
 	res := resItem.Res     //response obj
 	tsp := resItem.Tsp     //testCaseParser obj
 	index := resItem.Index //用例的索引
@@ -204,9 +222,11 @@ func handle(resItem ResultItem) {
 	tmpl := utils.GetTemplate(nil)
 	cn := report.CaseNum{}
 	caseItem := tsp.GetCaseset().GetCases()[index]
+	//TODO Status不应该这样判断
 	record := report.Record{Status: res.GetCode() == 200, Api: caseItem.Api, Elapsed: res.GetElapsed(), Traceback: "coming soon"}
 	makeDetail(&record, &caseItem, res, tsp.GetUid())
 	//	detail.Add2Cache(tsp.GetUid())
+	allPassed := true
 	for _, cond := range caseItem.GetConditions() {
 		//handle Validators
 		//	type Validator struct {
@@ -214,9 +234,9 @@ func handle(resItem ResultItem) {
 		//	Comparator string
 		//	Expect     string
 		//	Actual     string
-		log.Println("----------", cond)
+		//		log.Println("----------", cond)
 		compareData := utils.Translate(tmpl, cond.Source, vali)
-		log.Println(compareData)
+		//		log.Println(compareData)
 		assert := NewAssert(compareData)
 		var ret bool
 		switch cond.Op {
@@ -236,17 +256,20 @@ func handle(resItem ResultItem) {
 			ret = !assert.Regx(cond.Verified)
 			//			log.Println(cond, ret, compareData, cond.Verified)
 		}
-		if ret {
-			cn.Successes++
-		} else {
-			cn.Failures++
+		if !ret {
+			allPassed = false
 		}
 		valtor := report.Validator{ret, cond.Op, cond.Verified, compareData}
 		//		valtor.Add2Cache(tsp.GetUid())
 		record.Detail.Validators = append(record.Detail.Validators, valtor)
 	}
+	if allPassed {
+		cn.Successes++
+	} else {
+		cn.Failures++
+	}
 	cn.TotalCases = cn.Successes + cn.Failures
-	log.Println("cn:", cn)
+	//	log.Println("cn:", cn)
 	cn.Add2Cache(tsp.GetUid())
 	record.Add2Cache(tsp.GetUid())
 }
@@ -256,7 +279,7 @@ func makeDetail(record *report.Record, ci testcase.PIrequest, res PIresponseInte
 	req := ci.BuildRequest()
 	bs, _ := ioutil.ReadAll(req.Body)
 	s := string(bs)
-	log.Println("requestBody:", s)
+	//	log.Println("requestBody:", s)
 	//s可以是json，也可以是&参数的方式，最后一种是纯字符串
 	//都需要转为map结构
 	detail.RequestData = make(map[string]string)

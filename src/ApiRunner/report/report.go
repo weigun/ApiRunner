@@ -112,7 +112,7 @@ func (this *TestReport) dump() {
 	log.Println("--------------------------------------")
 	log.Printf("CaseSetName:%s\n", this.RecordSet.CaseSetName)
 	log.Printf("Host:%s\n", this.RecordSet.Host)
-	for _, r := range this.RecordSet.List {
+	for i, r := range this.RecordSet.List {
 		log.Printf("Api:%s\n", r.Api)
 		log.Printf("Status:%s\n", r.Status)
 		log.Printf("Elapsed:%s\n", r.Elapsed)
@@ -129,6 +129,7 @@ func (this *TestReport) dump() {
 			log.Printf("\tActual:%s\n", vali.Actual)
 		}
 		log.Printf("Traceback:%s\n", r.Traceback)
+		log.Printf("record %d end-----------------------\n", i)
 	}
 	log.Println("=====================Exported========================")
 }
@@ -186,6 +187,10 @@ type PIcacheInterfance interface {
 	Add2Cache(uint32)
 }
 
+type trouble struct {
+	uid  uint32
+	item interface{}
+}
 type itemCache struct {
 	summaryCache       map[uint32]Summary
 	validatorCache     map[uint32][]Validator
@@ -194,20 +199,24 @@ type itemCache struct {
 	recordCache        map[uint32][]Record
 	infoCache          map[uint32]Info
 	doneChan           chan uint32
-	itemChan           chan interface{}
+	itemChan           chan trouble
 	lastUid            uint32
 	counter            int64
+	reportNum          int64
 }
 
-func (this *itemCache) __add(item interface{}) {
+func (this *itemCache) __add(tr trouble) {
 	//TODO 执行相同用例时，需要将对应的缓存删除掉，防止重复的数据
 	this.counter++
-	uid := this.lastUid
-	log.Printf(">>>>>>>>>recv:%T", item)
+	//	uid := this.lastUid
+	uid := tr.uid
+	item := tr.item
+	log.Printf("%d >>>>>>>>>recv:%T,counter:%d", uid, item, this.counter)
 	switch item.(type) {
 	case Summary:
 		if uid != 0 {
 			this.summaryCache[uid] = item.(Summary)
+			this.reportNum++
 		}
 	case Validator:
 		//		this.validatorCache[uid] = item.(validator)
@@ -233,7 +242,7 @@ func (this *itemCache) __add(item interface{}) {
 	case CaseNum:
 		if uid != 0 {
 			item := item.(CaseNum)
-			log.Println("cn1:", item)
+			log.Println("cn1:", item, uid)
 			s := this.GetSummary(uid)
 			log.Printf("cn1.5:%T\n", s)
 			//更新summary
@@ -241,8 +250,9 @@ func (this *itemCache) __add(item interface{}) {
 			s.Errors += item.Errors
 			s.Failures += item.Failures
 			s.Successes += item.Successes
+			//map的value不可寻址，所以需要先编辑局部变量，然后再重新赋值
 			this.summaryCache[uid] = s
-			log.Println("cn2:", s, this.GetSummary(uid))
+			log.Println("cn2:", s, this.GetSummary(uid), uid)
 			//TODO 更新对应的recordSet?
 		}
 	case Info:
@@ -261,10 +271,12 @@ func (this *itemCache) __add(item interface{}) {
 }
 
 func (this *itemCache) add(uid uint32, item interface{}) {
-	log.Println("++++++this *itemCache:", this)
+	//	log.Println("++++++this *itemCache:", this)
+	// TODO 不能依赖管道的顺序
 	log.Println("++++++add:", uid, item)
-	this.itemChan <- uid
-	this.itemChan <- item
+	this.itemChan <- trouble{uid, item}
+	//	this.itemChan <- uid
+	//	this.itemChan <- item
 }
 
 func (this *itemCache) GetSummary(uid uint32) Summary {
@@ -292,6 +304,15 @@ func (this *itemCache) GetInfo(uid uint32) Info {
 	return this.infoCache[uid]
 }
 
+func (this *itemCache) removeCache(uid uint32) {
+	delete(this.infoCache, uid)
+	delete(this.summaryCache, uid)
+	delete(this.validatorCache, uid)
+	delete(this.executeDetailCache, uid)
+	delete(this.recordCache, uid)
+	delete(this.recordSetCache, uid)
+}
+
 var iCachePtr *itemCache
 
 //var repPoolPtr *ReportPool
@@ -301,11 +322,7 @@ func InitItemCache() {
 	//TODO 这样模式的代码太多，可以重构
 	log.Println("InitItemCache....")
 	once.Do(func() {
-		//		repPoolPtr = &ReportPool{make(chan TestReport, 50)}
-		//		go func() {
-		//			repPoolPtr.export2Html()
-		//		}()
-		iCachePtr = &itemCache{make(map[uint32]Summary), make(map[uint32][]Validator), make(map[uint32][]ExecuteDetail), make(map[uint32]RecordSet), make(map[uint32][]Record), make(map[uint32]Info), make(chan uint32, 32), make(chan interface{}, 64), 0, 0}
+		iCachePtr = &itemCache{make(map[uint32]Summary), make(map[uint32][]Validator), make(map[uint32][]ExecuteDetail), make(map[uint32]RecordSet), make(map[uint32][]Record), make(map[uint32]Info), make(chan uint32, 32), make(chan trouble, 64), 0, 0, 0}
 		go func() {
 			// 串行化获取报表组件
 			for {
@@ -313,7 +330,12 @@ func InitItemCache() {
 				//如果两个chan都能读，则会随机读取一个，因为是带缓存的chan，应该问题不大
 				case uid := <-iCachePtr.doneChan:
 					log.Println("ready to export2Html.......")
+					iCachePtr.reportNum--
 					export2Html(uid)
+					iCachePtr.removeCache(uid)
+					if iCachePtr.reportNum <= 0 {
+						utils.SendSignal()
+					}
 				case it := <-iCachePtr.itemChan:
 					iCachePtr.__add(it)
 				}

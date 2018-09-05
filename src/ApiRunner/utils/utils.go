@@ -108,7 +108,7 @@ func Translate(tmpl *template.Template, tmplStr string, obj dataInterface) strin
 	if obj == nil {
 		tmpl.Execute(wr, nil)
 	} else {
-		log.Println("===============", obj, obj.GetData())
+		//		log.Println("===============", obj, obj.GetData())
 		tmpl.Execute(wr, obj.GetData())
 	}
 	return wr.String()
@@ -154,4 +154,24 @@ func ToNumber(a interface{}) interface{} {
 func GetDateTime() string {
 	timeStamp := time.Now().Unix()
 	return time.Unix(timeStamp, 0).Format("20060102_150405")
+}
+
+//const (
+//	KILL         = os.Kill
+//	SIGINT       = os.Interrupt
+//	REPORTS_DONE = syscall.SIGUSR1
+//)
+
+var sigChan = make(chan bool)
+
+func WaitSignal() {
+	<-sigChan
+}
+
+func SendSignal() {
+	sigChan <- true
+}
+
+func Now4ms() int64 {
+	return time.Now().UnixNano() / 1e6
 }

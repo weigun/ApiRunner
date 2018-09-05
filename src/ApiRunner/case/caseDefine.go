@@ -3,9 +3,7 @@ package testcase
 import (
 	utils "ApiRunner/utils"
 	"bytes"
-	"fmt"
-	_ "fmt"
-	_ "log"
+	"log"
 	"net/http"
 	Url "net/url"
 	_ "strings"
@@ -110,7 +108,7 @@ func (this *CaseItem) cover() {
 
 func (this *CaseItem) BuildRequest() *http.Request {
 	//构造请求体
-	fmt.Println(this)
+	//	fmt.Println("CaseItem:", this)
 	api := this.Api
 	method := this.Method
 	var data string
@@ -119,15 +117,15 @@ func (this *CaseItem) BuildRequest() *http.Request {
 	} else {
 		data = this.Params.Conver(this.Method)
 	}
-	fmt.Println(data)
+	log.Println("BuildRequest:", data)
 	bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
 	req, err := http.NewRequest(method, api, bodyData)
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Println(req)
+	//	fmt.Println(req)
 	for _, h := range this.Headers {
-		fmt.Println("-------------", h)
+		//		fmt.Println("-------------", h)
 		req.Header.Add(h.Key, h.Val)
 	}
 	return req

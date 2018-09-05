@@ -71,7 +71,7 @@ func (this *Runner) Start() {
 	resPool := validation.NewResultPool()
 	for i, ci := range this.Testcase.GetCaseset().GetCases() {
 		//顺序执行用例
-		fmt.Printf("testcase %d\n", i)
+		log.Printf("testcase %d\n", i)
 		req := ci.BuildRequest() //构造请求体
 		resp := this.doRequest(req)
 		ts := this.Testcase
@@ -80,9 +80,10 @@ func (this *Runner) Start() {
 		//TODO 各种log需要集中到log中心，因为在报表性需要查看log信息
 
 	}
+	resPool.Done(this.Testcase.GetUid())
 	if !status {
 		log.Println("testcase", caseName, "finished ", "waiting for result to finish")
-		resPool.WaitForDone(this.Testcase.GetUid())
+		//		resPool.WaitForDone(this.Testcase.GetUid())
 	}
 }
 
@@ -92,9 +93,9 @@ func (this *Runner) stop() {
 
 func (this *Runner) doRequest(request *http.Request) validation.Response {
 	//执行请求
-	startTime := time.Now().Unix()
+	startTime := utils.Now4ms()
 	response, err := this.Core.Do(request)
-	elapsed := time.Now().Unix() - startTime
+	elapsed := utils.Now4ms() - startTime
 	resp := validation.Response{Elapsed: elapsed, Header: response.Header}
 	api := request.URL.String()
 	if err != nil {
@@ -105,9 +106,9 @@ func (this *Runner) doRequest(request *http.Request) validation.Response {
 		}
 	} else {
 		if response.StatusCode == http.StatusOK {
-			fmt.Println(request.Method, api, elapsed, response.ContentLength)
+			log.Println(request.Method, api, elapsed, response.ContentLength)
 		} else {
-			fmt.Println(request.Method, api, elapsed, getErr(api, response.StatusCode))
+			log.Println(request.Method, api, elapsed, getErr(api, response.StatusCode))
 		}
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {

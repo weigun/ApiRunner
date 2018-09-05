@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io/ioutil"
+	"log"
 	_ "net/http"
 	"strconv"
 	"strings"
@@ -45,15 +46,14 @@ func (this *casePaser) parse(casePath string) {
 	//        "num":1
 	//    },
 	//}
-	casePath = `D:\test-area\github\ApiRunner\src\ApiRunner\case\demo.conf`
-	fmt.Println(casePath)
+	//	casePath = `D:\test-area\github\ApiRunner\src\ApiRunner\case\demo.conf`
+	log.Println("casePath:", casePath)
 	fb, err := ioutil.ReadFile(casePath)
 	if err != nil {
-		fmt.Printf("%s\n", err)
-		panic(err)
+		log.Fatalf("%s\n", err)
 	}
 	csMap := utils.Json2Map(fb)
-	fmt.Println(csMap)
+	//	fmt.Println(csMap)
 	this.Caseset.Conf.Name = csMap["name"].(string)
 	this.Caseset.Conf.Host = csMap["host"].(string)
 	if _, ok := csMap["headers"]; ok {
@@ -61,7 +61,7 @@ func (this *casePaser) parse(casePath string) {
 			//增加公共头部
 			this.Caseset.Conf.Headers = append(this.Caseset.Conf.Headers, caseMod.Header{k, v.(string)})
 		}
-		fmt.Println("hehe++++++++++++++++", this.Caseset.Conf.Headers)
+		//		fmt.Println("hehe++++++++++++++++", this.Caseset.Conf.Headers)
 	}
 	if _, ok := csMap["globalVars"].(map[string]interface{}); ok {
 		var h caseMod.Variables
@@ -79,7 +79,7 @@ func (this *casePaser) parse(casePath string) {
 			case []string:
 				h = caseMod.Variables{k, v.([]string)}
 			default:
-				fmt.Printf("caseset globalVars not support type: %T", v)
+				log.Printf("caseset globalVars not support type: %T", v)
 				panic("caseset globalVars not support type")
 
 			}
@@ -88,7 +88,7 @@ func (this *casePaser) parse(casePath string) {
 	}
 	//解析用例集配置完毕
 	//开始解析用例
-	fmt.Printf(">>>>>>>>>>>%T\n", csMap["cases"])
+	//	fmt.Printf(">>>>>>>>>>>%T\n", csMap["cases"])
 	for _, _case := range csMap["cases"].([]interface{}) {
 		//    "cases":[
 		//        {
@@ -134,9 +134,9 @@ func (this *casePaser) parse(casePath string) {
 			}
 		} else {
 			//直接用公共header
-			fmt.Println("enter---------------------")
+			//			fmt.Println("enter---------------------")
 			ci.Headers = this.Caseset.Conf.Headers
-			fmt.Println(ci.Headers, this.Caseset.Conf.Headers)
+			//			fmt.Println(ci.Headers, this.Caseset.Conf.Headers)
 		}
 		if _, ok := _case["params"].(map[string]interface{}); ok {
 			//请求参数
@@ -153,6 +153,6 @@ func (this *casePaser) parse(casePath string) {
 	}
 	//TODO 可能需要将string转为rune
 	//TODO 用例需要池化，全局都可以能拿得到
-	fmt.Println("===============", this.Caseset)
+	log.Println("===============", this.Caseset)
 
 }

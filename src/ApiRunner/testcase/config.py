@@ -71,6 +71,47 @@ caseset = {
 				},
 			],
 
+		},
+		{
+			"name":"info",
+			"api": common["login"]["api"],
+			"method":"POST",
+			# "params":{
+			# 	"username":"{{randUser}}",
+			# 	"loginType":"0"
+			# },
+			"params": {
+				"head":{},
+				"body":{
+					# "username":"{{randUser}}", #--这里是随机用户名的用法
+					"username":"22222222223",
+					"verifyCode" : "1111",
+					"loginType": "0"
+				}
+			},
+			"validate":[
+				{
+					"op" : "eq",
+					"source": "{{.body.code}}",
+					"verified":"200",
+				},
+				{
+					"op" : "gt",
+					"source": "{{.body.data.firstTime}}",
+					"verified":"10",
+				},
+				{
+					"op" : "ne",
+					"source": "{{.body.data.token}}",
+					"verified":"",
+				},
+				{
+					"op" : "regx",
+					"source": "{{.body.code}}}",
+					"verified":"\d+",
+				},
+			],
+
 		}
 	]
 }
@@ -79,7 +120,7 @@ caseset = {
 
 if __name__ == '__main__':
 	try:
-		json.dump(caseset,open("{}.conf".format(caseset["name"]),"w"))
+		json.dump(caseset,open("{}.conf".format(os.path.join(os.getcwd(),"conf",caseset["name"])),"w"))
 	except:
 		traceback.print_exc()
 		exit(-1)

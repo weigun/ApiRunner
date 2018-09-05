@@ -5,6 +5,7 @@ import (
 	cmd "ApiRunner/cmd"
 	engine "ApiRunner/engine"
 	mgr "ApiRunner/manager"
+	//	report "ApiRunner/report"
 	runner "ApiRunner/runner"
 	utils "ApiRunner/utils"
 	_ "fmt"
@@ -13,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
+	_ "time"
 )
 
 func appStart() {
@@ -25,12 +26,13 @@ func appStart() {
 
 func runLocalTasks(tasks []string) {
 	//单次执行用例
+	log.Println("tasks:", tasks)
 	eng := engine.NewEngine()
 	_ = eng
 	curFolder := utils.GetCwd()
 	var wg sync.WaitGroup
 	for _, v := range tasks {
-		casePath := filepath.Join(curFolder, "testcase", v+".json")
+		casePath := filepath.Join(curFolder, "testcase", "conf", v+".conf")
 		caseParser := tsParser.NewCaseParser(casePath)
 		rn := runner.NewRunner(caseParser)
 		wg.Add(1)
@@ -42,9 +44,11 @@ func runLocalTasks(tasks []string) {
 		}(rn) //copy rn
 	}
 	wg.Wait()
+	//	report.WaitForExport()
+	utils.WaitSignal()
 	//	TODO 生成报告
 	log.Println("test done")
-	time.Sleep(time.Duration(10) * time.Second)
+	//	time.Sleep(time.Duration(10) * time.Second)
 }
 
 func main() {
@@ -53,6 +57,6 @@ func main() {
 		mgr.SetupHandlers()
 		appStart()
 	} else {
-		runLocalTasks(strings.Split(",", cmdArgs.RunCase))
+		runLocalTasks(strings.Split(cmdArgs.RunCase, `,`))
 	}
 }

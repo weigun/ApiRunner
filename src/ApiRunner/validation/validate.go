@@ -1,19 +1,17 @@
 package validation
 
 import (
-	"io/ioutil"
-	"time"
-	_ "time"
-	//	"time"
-	//	report "ApiRunner/report"
 	testcase "ApiRunner/case"
 	report "ApiRunner/report"
 	utils "ApiRunner/utils"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"sync"
+	"time"
+	_ "time"
 )
 
 type PIresponseInterface interface {
@@ -223,7 +221,7 @@ func handle(resItem ResultItem) {
 	cn := report.CaseNum{}
 	caseItem := tsp.GetCaseset().GetCases()[index]
 	//TODO Status不应该这样判断
-	record := report.Record{Status: res.GetCode() == 200, Api: caseItem.Api, Elapsed: res.GetElapsed(), Traceback: "coming soon"}
+	record := report.Record{Status: res.GetCode() == 200, Api: caseItem.Api, Elapsed: res.GetElapsed(), Traceback: res.GetErrMsg()}
 	makeDetail(&record, &caseItem, res, tsp.GetUid())
 	//	detail.Add2Cache(tsp.GetUid())
 	allPassed := true

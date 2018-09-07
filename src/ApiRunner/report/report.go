@@ -2,12 +2,13 @@ package report
 
 import (
 	utils "ApiRunner/utils"
+	"bytes"
 	_ "encoding/json"
 	_ "fmt"
+	"html/template"
+	"io/ioutil"
 	"log"
-	_ "log"
-	_ "os"
-	_ "path/filepath"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -134,10 +135,25 @@ func (this *TestReport) dump() {
 	log.Println("=====================Exported========================")
 }
 
+var tmpl = template.New("report")
+
 func (this *TestReport) export() {
 	//输出html报表
 	//只是简单的做模板渲染
 	this.dump()
+	f := filepath.Join(utils.GetCwd(), "templates", "tmpl", "report.html")
+	tmpl, err := template.ParseFiles(f) //从文件创建一个模板，这里不能用tmpl
+	if err != nil {
+		panic(err.Error())
+	}
+	//	fileName := filepath.Join(`z:\`, "test.html") //generateFileName(this.RecordSet.CaseSetName)
+	fileName := filepath.Join(`z:\`, generateFileName(this.RecordSet.CaseSetName))
+	wr := bytes.NewBufferString("")
+	tmpl.Execute(wr, this)
+	data := wr.Bytes()
+	if ioutil.WriteFile(fileName, data, 0777) == nil {
+		log.Println("写入文件成功")
+	}
 
 }
 
@@ -177,7 +193,7 @@ func export2Html(uid uint32) {
 		recoSet.List = append(recoSet.List, reco)
 	}
 	repo.RecordSet = recoSet
-	log.Println("repo:", repo)
+	//	log.Println("repo:", repo)
 	repo.export()
 
 	//	}

@@ -35,6 +35,7 @@ func (this *engine) SafeRun(r runner.Runner) {
 		// don't panic
 		err := recover()
 		if err != nil {
+			// TODO 需要保存堆栈
 			debug.PrintStack()
 		}
 	}()

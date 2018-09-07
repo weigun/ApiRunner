@@ -2,6 +2,7 @@ package runner
 
 import (
 	testcase "ApiRunner/case"
+	varsMgr "ApiRunner/manager/bucket/caseVariables"
 	report "ApiRunner/report"
 	utils "ApiRunner/utils"
 	validation "ApiRunner/validation"
@@ -72,8 +73,17 @@ func (this *Runner) Start() {
 	for i, ci := range this.Testcase.GetCaseset().GetCases() {
 		//顺序执行用例
 		log.Printf("testcase %d\n", i)
-		req := ci.BuildRequest() //构造请求体
+		req := ci.BuildRequest(this.Testcase.GetUid()) //构造请求体
 		resp := this.doRequest(req)
+		for _, v := range ci.GetExportVars() {
+			tmpl := utils.GetTemplate(nil)
+			//TODO 需要加上正则支持
+			contentMap := utils.Json2Map([]byte(resp.GetContent()))
+			vali := validation.Validator{contentMap}
+			s := utils.Translate(tmpl, v.Val.(string), vali)
+			varsMgr.SetVar(this.Testcase.GetUid(), v.Name, s)
+			log.Println("add ExportVars:", this.Testcase.GetUid(), v.Name, s)
+		}
 		ts := this.Testcase
 		log.Println(resp)
 		resPool.Push(validation.ResultItem{ts, int64(i), resp}) //推送到结果池进行验证
@@ -93,6 +103,7 @@ func (this *Runner) stop() {
 
 func (this *Runner) doRequest(request *http.Request) validation.Response {
 	//执行请求
+	log.Println("-------before request:", request)
 	startTime := utils.Now4ms()
 	response, err := this.Core.Do(request)
 	elapsed := utils.Now4ms() - startTime

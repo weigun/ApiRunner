@@ -59,12 +59,12 @@ type ResultItem struct {
 	Res   PIresponseInterface
 }
 
-type validator struct {
+type Validator struct {
 	//对应response的结构，方便进行引用
 	Body map[string]interface{}
 }
 
-func (this validator) GetData() map[string]interface{} {
+func (this Validator) GetData() map[string]interface{} {
 	//实现dataInterface接口
 	return map[string]interface{}{"body": this.Body}
 }
@@ -218,7 +218,7 @@ func handle(resItem ResultItem) {
 	index := resItem.Index //用例的索引
 	contentMap := utils.Json2Map([]byte(res.GetContent()))
 	log.Printf("contentMap is %T\n", contentMap)
-	vali := validator{contentMap}
+	vali := Validator{contentMap}
 	tmpl := utils.GetTemplate(nil)
 	cn := report.CaseNum{}
 	caseItem := tsp.GetCaseset().GetCases()[index]
@@ -276,7 +276,7 @@ func handle(resItem ResultItem) {
 
 func makeDetail(record *report.Record, ci testcase.PIrequest, res PIresponseInterface, uid uint32) {
 	detail := report.ExecuteDetail{}
-	req := ci.BuildRequest()
+	req := ci.BuildRequest(uid)
 	bs, _ := ioutil.ReadAll(req.Body)
 	s := string(bs)
 	//	log.Println("requestBody:", s)

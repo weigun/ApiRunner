@@ -9,12 +9,12 @@ import (
 //用例接口
 type PItranslate interface {
 	//转换接口
-	Conver(string) string //将含有变量与表达式的模板翻译过来
+	Conver(uint32, string) string //将含有变量与表达式的模板翻译过来
 
 }
 
 type PIrequest interface {
-	BuildRequest() *http.Request //构造请求体
+	BuildRequest(uint32) *http.Request //构造请求体
 }
 
 type ParamsInterface interface {

@@ -100,6 +100,11 @@ func GetTemplate(_func *template.FuncMap) *template.Template {
 
 func Translate(tmpl *template.Template, tmplStr string, obj dataInterface) string {
 	//将模板翻译
+	/*
+		2种情况
+		1.有且只自定义变量
+		2.没有自定义变量
+	*/
 	wr := bytes.NewBufferString("")
 	tmpl, err := tmpl.Parse(tmplStr)
 	if err != nil {

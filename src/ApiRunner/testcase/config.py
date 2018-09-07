@@ -35,8 +35,11 @@ caseset = {
 		"Authorization": ""
 	},
 	"globalVars":{
-		"token" : "{%^&*",
-		"sid" :1
+	# 全局变量与用例导出的变量共用同一个命名空间，所以相同的变量名会出现覆盖的情况
+	# 只针对header和params字段 有效
+		"name" : "weigun",
+		"sid" :"1",
+		"lucky": "{{randRange 10 100}}"
 	},
 	"cases":[
 		{
@@ -48,6 +51,14 @@ caseset = {
 			# 	"loginType":"0"
 			# },
 			"params":common["login"]["param"],
+			"export":{
+				#该用例导出的变量
+				#如果是json格式，可以用{{body.data.token}}方式导出
+				#如果是文本形式，则可以用正则表达式导出
+				#如需引用变量，只要在变量名前加上.即可，如{{$token}}
+				# 全局变量与用例导出的变量共用同一个命名空间，所以相同的变量名会出现覆盖的情况
+				"token" : "{{.body.data.token}}",
+			},
 			"validate":[
 				{
 					"op" : "eq",
@@ -74,20 +85,10 @@ caseset = {
 		},
 		{
 			"name":"info",
-			"api": common["login"]["api"],
-			"method":"POST",
-			# "params":{
-			# 	"username":"{{randUser}}",
-			# 	"loginType":"0"
-			# },
-			"params": {
-				"head":{},
-				"body":{
-					# "username":"{{randUser}}", #--这里是随机用户名的用法
-					"username":"22222222223",
-					"verifyCode" : "1111",
-					"loginType": "0"
-				}
+			"api": "/api/users/info",
+			"method":"GET",
+			"headers":{
+				"Authorization": "{{$token}}"
 			},
 			"validate":[
 				{
@@ -120,7 +121,7 @@ caseset = {
 
 if __name__ == '__main__':
 	try:
-		json.dump(caseset,open("{}.conf".format(os.path.join(os.getcwd(),"conf",caseset["name"])),"w"))
+		json.dump(caseset,open("{}.conf".format(os.path.join(os.getcwd(),"conf",caseset["name"])),"w"),indent=4)
 	except:
 		traceback.print_exc()
 		exit(-1)

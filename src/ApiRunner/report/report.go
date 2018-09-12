@@ -161,14 +161,6 @@ func newTestReport() *TestReport {
 	return &TestReport{}
 }
 
-//type ReportPool struct {
-//	reportChan chan TestReport
-//}
-
-//func (this *ReportPool) push(report TestReport) {
-//	this.reportChan <- report
-//}
-
 func export2Html(uid uint32) {
 	//依据uid来组装报表
 	repo := newTestReport()
@@ -176,11 +168,8 @@ func export2Html(uid uint32) {
 	log.Println("cn3:", s)
 	s.Duration = time.Now().Unix() - s.StartTime
 	repo.Summary = s
-	//	details := iCachePtr.GetExecuteDetails(uid)
-	//		detail.Validators = iCachePtr.getValidatorList(uid)
 	//组装每项用例记录
 	info := iCachePtr.GetInfo(uid)
-	//	recoSet := iCachePtr.GetRecordSet(uid)
 	recoSet := RecordSet{}
 	recoSet.TotalCases = s.TotalCases
 	recoSet.Successes = s.Successes
@@ -189,14 +178,10 @@ func export2Html(uid uint32) {
 	recoSet.CaseSetName = info.CaseSetName
 	recoSet.Host = info.Host
 	for _, reco := range iCachePtr.GetRecords(uid) {
-		//reco.Detail = details[i]
 		recoSet.List = append(recoSet.List, reco)
 	}
 	repo.RecordSet = recoSet
-	//	log.Println("repo:", repo)
 	repo.export()
-
-	//	}
 }
 
 type PIcacheInterfance interface {
@@ -222,9 +207,7 @@ type itemCache struct {
 }
 
 func (this *itemCache) __add(tr trouble) {
-	//TODO 执行相同用例时，需要将对应的缓存删除掉，防止重复的数据
 	this.counter++
-	//	uid := this.lastUid
 	uid := tr.uid
 	item := tr.item
 	log.Printf("%d >>>>>>>>>recv:%T,counter:%d", uid, item, this.counter)
@@ -235,7 +218,6 @@ func (this *itemCache) __add(tr trouble) {
 			this.reportNum++
 		}
 	case Validator:
-		//		this.validatorCache[uid] = item.(validator)
 		if uid != 0 {
 			this.validatorCache[uid] = append(this.validatorCache[uid], item.(Validator))
 		}
@@ -246,10 +228,6 @@ func (this *itemCache) __add(tr trouble) {
 	case Record:
 		if uid != 0 {
 			this.recordCache[uid] = append(this.recordCache[uid], item.(Record))
-			//			item := item.(Record)
-			//			csName := item.CaseSetName
-			//			sc := this.recordCache[uid]
-			//			sc[csName] = append(sc[csName], item)
 		}
 	case RecordSet:
 		if uid != 0 {
@@ -275,24 +253,15 @@ func (this *itemCache) __add(tr trouble) {
 		if uid != 0 {
 			this.infoCache[uid] = item.(Info)
 		}
-	case uint32:
-		if this.counter%2 == 0 {
-			// 做一个校验，防止数据串行有问题
-			log.Fatalf("uid counter is not odd!!!counter is %d", this.counter)
-		}
-		this.lastUid = item.(uint32)
 	default:
 		log.Printf("not support type for report compment %T\n", item)
 	}
 }
 
 func (this *itemCache) add(uid uint32, item interface{}) {
-	//	log.Println("++++++this *itemCache:", this)
-	// TODO 不能依赖管道的顺序
+
 	log.Println("++++++add:", uid, item)
 	this.itemChan <- trouble{uid, item}
-	//	this.itemChan <- uid
-	//	this.itemChan <- item
 }
 
 func (this *itemCache) GetSummary(uid uint32) Summary {
@@ -329,6 +298,10 @@ func (this *itemCache) removeCache(uid uint32) {
 	delete(this.recordSetCache, uid)
 }
 
+func (this *itemCache) integrityCheck(uid uint32) bool {
+	return this.GetSummary(uid).TotalCases == int64(len(this.GetRecords(uid)))
+}
+
 var iCachePtr *itemCache
 
 //var repPoolPtr *ReportPool
@@ -338,19 +311,26 @@ func InitItemCache() {
 	//TODO 这样模式的代码太多，可以重构
 	log.Println("InitItemCache....")
 	once.Do(func() {
-		iCachePtr = &itemCache{make(map[uint32]Summary), make(map[uint32][]Validator), make(map[uint32][]ExecuteDetail), make(map[uint32]RecordSet), make(map[uint32][]Record), make(map[uint32]Info), make(chan uint32, 32), make(chan trouble, 64), 0, 0, 0}
+		iCachePtr = &itemCache{make(map[uint32]Summary), make(map[uint32][]Validator), make(map[uint32][]ExecuteDetail), make(map[uint32]RecordSet), make(map[uint32][]Record), make(map[uint32]Info), make(chan uint32, 32), make(chan trouble, 128), 0, 0, 0}
 		go func() {
 			// 串行化获取报表组件
 			for {
 				select {
 				//如果两个chan都能读，则会随机读取一个，因为是带缓存的chan，应该问题不大
 				case uid := <-iCachePtr.doneChan:
-					log.Println("ready to export2Html.......")
-					iCachePtr.reportNum--
-					export2Html(uid)
-					iCachePtr.removeCache(uid)
-					if iCachePtr.reportNum <= 0 {
-						utils.SendSignal()
+					if iCachePtr.integrityCheck(uid) {
+						//检查信息是否都收集完毕，由于异步，有可能会有延迟
+						log.Println("ready to export2Html.......")
+						iCachePtr.reportNum--
+						export2Html(uid)
+						iCachePtr.removeCache(uid)
+						if iCachePtr.reportNum <= 0 {
+							utils.SendSignal()
+						}
+					} else {
+						//某些组件延迟了，则再检查一下
+						log.Printf("some components delay,check again,uid is %d\n", uid)
+						iCachePtr.doneChan <- uid
 					}
 				case it := <-iCachePtr.itemChan:
 					iCachePtr.__add(it)

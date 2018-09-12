@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"sync"
-	"time"
 	_ "time"
 )
 
@@ -159,12 +158,14 @@ func NewResultPool() *ResultPool {
 					handle(resItem)
 				case uid := <-resPool.doneChan:
 					log.Println("all case done")
-					//收到用例跑完消息，2s后再告诉报表开始生成，暂时避免异步的问题
-					time.AfterFunc(time.Duration(2)*time.Second, func() {
-						log.Println("generateing report")
-						var footer report.Footer
-						footer.Add2Cache(uid)
-					})
+					var footer report.Footer
+					footer.Add2Cache(uid)
+					//					//收到用例跑完消息，2s后再告诉报表开始生成，暂时避免异步的问题
+					//					time.AfterFunc(time.Duration(1000)*time.Second, func() {
+					//						log.Println("generateing report")
+					//						var footer report.Footer
+					//						footer.Add2Cache(uid)
+					//					})
 				}
 			}
 			//			resPool.handleResult()

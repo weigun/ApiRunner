@@ -13,6 +13,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
+	"strings"
 	_ "strings"
 	"time"
 )
@@ -59,6 +61,8 @@ func NewRunner(cs testcase.PIparserInsterface) Runner {
 	return Runner{client, cs, make(chan bool, 1)}
 }
 
+var regx *regexp.Regexp
+
 func (this *Runner) Start() {
 	//start test the testcase set
 	status := <-this.Ready
@@ -76,13 +80,33 @@ func (this *Runner) Start() {
 		req := ci.BuildRequest(this.Testcase.GetUid()) //构造请求体
 		resp := this.doRequest(req)
 		for _, v := range ci.GetExportVars() {
-			tmpl := utils.GetTemplate(nil)
-			//TODO 需要加上正则支持
-			contentMap := utils.Json2Map([]byte(resp.GetContent()))
-			vali := validation.Validator{contentMap}
-			s := utils.Translate(tmpl, v.Val.(string), vali)
-			varsMgr.SetVar(this.Testcase.GetUid(), v.Name, s)
-			log.Println("add ExportVars:", this.Testcase.GetUid(), v.Name, s)
+			if strings.Index(v.Val.(string), `{{`) != -1 && strings.Index(v.Val.(string), `}}`) != -1 {
+				//需要转译
+				tmpl := utils.GetTemplate(nil)
+				//TODO 需要加上正则支持
+				contentMap := utils.Json2Map([]byte(resp.GetContent()))
+				vali := validation.Validator{contentMap}
+				s := utils.Translate(tmpl, v.Val.(string), vali)
+				varsMgr.SetVar(this.Testcase.GetUid(), v.Name, s)
+				log.Println("add ExportVars:", this.Testcase.GetUid(), v.Name, s)
+			} else {
+				//使用正则匹配
+				regx = regexp.MustCompile(v.Val.(string))
+				match := regx.FindStringSubmatch(resp.GetContent())
+				if match != nil {
+					//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
+					varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
+					log.Println("add ExportVars:", this.Testcase.GetUid(), v.Name, match)
+				}
+			}
+
+			//			tmpl := utils.GetTemplate(nil)
+			//			//TODO 需要加上正则支持
+			//			contentMap := utils.Json2Map([]byte(resp.GetContent()))
+			//			vali := validation.Validator{contentMap}
+			//			s := utils.Translate(tmpl, v.Val.(string), vali)
+			//			varsMgr.SetVar(this.Testcase.GetUid(), v.Name, s)
+			//			log.Println("add ExportVars:", this.Testcase.GetUid(), v.Name, s)
 		}
 		ts := this.Testcase
 		log.Println(resp)

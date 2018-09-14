@@ -4,10 +4,11 @@ import (
 	tsParser "ApiRunner/case/parser"
 	cmd "ApiRunner/cmd"
 	engine "ApiRunner/engine"
-	mgr "ApiRunner/manager"
+	//	mgr "ApiRunner/manager"
 	//	report "ApiRunner/report"
 	runner "ApiRunner/runner"
 	utils "ApiRunner/utils"
+	web "ApiRunner/web"
 	_ "fmt"
 	"log"
 	"net/http"
@@ -18,10 +19,12 @@ import (
 )
 
 func appStart() {
+	log.Println(`app started!Waiting for request......`)
 	err := http.ListenAndServe("127.0.0.1:9090", nil) //设置监听的端口
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+
 }
 
 func runLocalTasks(tasks []string) {
@@ -54,7 +57,7 @@ func runLocalTasks(tasks []string) {
 func main() {
 	cmdArgs := cmd.ParseCmd()
 	if cmdArgs.Web {
-		mgr.SetupHandlers()
+		web.SetupHandlers()
 		appStart()
 	} else {
 		runLocalTasks(strings.Split(cmdArgs.RunCase, `,`))

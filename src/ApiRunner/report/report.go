@@ -1,6 +1,7 @@
 package report
 
 import (
+	cmd "ApiRunner/cmd"
 	utils "ApiRunner/utils"
 	"bytes"
 	_ "encoding/json"
@@ -94,6 +95,7 @@ func (this RecordSet) Add2Cache(uid uint32) {
 type Footer bool
 
 func (this Footer) Add2Cache(uid uint32) {
+	log.Println(`recv Footer:`, uid)
 	iCachePtr.doneChan <- uid
 }
 
@@ -318,14 +320,17 @@ func InitItemCache() {
 				select {
 				//如果两个chan都能读，则会随机读取一个，因为是带缓存的chan，应该问题不大
 				case uid := <-iCachePtr.doneChan:
+					log.Println(`iCachePtr.doneChan len:`, len(iCachePtr.doneChan), uid)
 					if iCachePtr.integrityCheck(uid) {
 						//检查信息是否都收集完毕，由于异步，有可能会有延迟
 						log.Println("ready to export2Html.......")
 						iCachePtr.reportNum--
 						export2Html(uid)
 						iCachePtr.removeCache(uid)
-						if iCachePtr.reportNum <= 0 {
-							utils.SendSignal()
+						if !cmd.GetArgs().Web {
+							if iCachePtr.reportNum <= 0 {
+								utils.SendSignal()
+							}
 						}
 					} else {
 						//某些组件延迟了，则再检查一下

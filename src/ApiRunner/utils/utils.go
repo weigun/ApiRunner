@@ -1,14 +1,17 @@
 package utils
 
 import (
-	//validation "ApiRunner/validation"
 	"bytes"
 	"encoding/json"
-	"fmt"
+	_ "fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"text/template"
+	"time"
 )
 
 func Map2Json(m map[string]interface{}) string {
@@ -28,6 +31,27 @@ func Json2Map(js []byte) map[string]interface{} {
 	return mapResult
 }
 
+func Params2Map(s string) map[string]interface{} {
+	// 将id=1&name=weigun这种形式的参数转为map
+	m := make(map[string]interface{})
+	for _, para := range strings.Split(s, "&") {
+		pSlice := strings.Split(para, "=")
+		if len(pSlice) == 2 {
+			m[pSlice[0]] = pSlice[1]
+		}
+	}
+	return m
+}
+
+func Header2Json(h http.Header) string {
+	//map[string][]string
+	m := make(map[string]interface{})
+	for k, v := range h {
+		m[k] = v
+	}
+	return Map2Json(m)
+}
+
 func GetCwd() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0])) //返回绝对路径  filepath.Dir(os.Args[0])去除最后一个元素的路径
 	if err != nil {
@@ -36,47 +60,123 @@ func GetCwd() string {
 	return dir
 }
 
-func GetErr(api string, code int) string {
-	//请求错误码格式化
-	return fmt.Sprintf(`%s failed,StatusCode is %d`, api, code)
+//func runLocalTasks(tasks []string) {
+//	//单次执行用例
+//	eng := NewEngine()
+//	curFolder := getCwd()
+//	var wg sync.WaitGroup
+//	for i, v := range tasks {
+//		casePath := filepath.Join(curFolder, "testcase", v+".json")
+//		caseParser := NewCaseParser(casePath)
+//		rn := NewRunner{caseParser.getCaseset()}
+//		wg.Add(1)
+//		go func(rn runner) {
+//			defer wg.Done()  //TODO 可能需要放在safeRun下一行
+//			rn.ready <- true //缓冲chan
+//			eng.safeRun(rn)
+//		}(rn) //copy rn
+//	}
+//	wg.Wait()
+//	//	TODO 生成报告
+//	log.Println("test done")
+//}
+
+//func getErr(api string, code int) string {
+//	//请求错误码格式化
+//	return fmt.Sprintf(`%s failed,StatusCode is %d`, api, code)
+//}
+
+type dataInterface interface {
+	GetData() map[string]interface{}
 }
 
-func GetTemplate() *template.Template {
-	_func := template.FuncMap{
-		"randUser":  randUser,
-		"randRange": randRange,
-	}
-
+func GetTemplate(_func *template.FuncMap) *template.Template {
 	t := template.New("conf")
-	t.Funcs(_func)
-	return t
+	if _func != nil {
+		t.Funcs(*_func)
+	}
+	return t //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
 }
 
-func Translate(data string) string {
+func Translate(tmpl *template.Template, tmplStr string, obj dataInterface) string {
 	//将模板翻译
-	tmpl := GetTemplate() //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
+	/*
+		2种情况
+		1.有且只自定义变量
+		2.没有自定义变量
+	*/
 	wr := bytes.NewBufferString("")
-	tmpl, err := tmpl.Parse(data)
+	tmpl, err := tmpl.Parse(tmplStr)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	tmpl.Execute(wr, nil)
+	if obj == nil {
+		tmpl.Execute(wr, nil)
+	} else {
+		//		log.Println("===============", obj, obj.GetData())
+		tmpl.Execute(wr, obj.GetData())
+	}
 	return wr.String()
 }
 
-func TranslateValidata(data string, resp validation) string {
-	//将模板翻译
-	tmpl := getTemplate() //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
-	wr := bytes.NewBufferString("")
-	tmpl, err := tmpl.Parse(data)
-	if err != nil {
-		log.Fatalln(err)
+//func translateValidata(data string, resp validation) string {
+//	//将模板翻译
+//	tmpl := getTemplate() //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
+//	wr := bytes.NewBufferString("")
+//	tmpl, err := tmpl.Parse(data)
+//	if err != nil {
+//		log.Fatalln(err)
+//	}
+//	switch resp.Body.(type) {
+//	case respBodyMap:
+//		tmpl.Execute(wr, resp.Body.(respBodyMap))
+//	case respBodySlice:
+//		tmpl.Execute(wr, resp.Body.(respBodySlice))
+//	}
+//	return wr.String()
+//}
+
+func ToNumber(a interface{}) interface{} {
+	switch a.(type) {
+	case int, float64:
+		return a
+	case string:
+		a := a.(string)
+		i, err := strconv.ParseInt(a, 10, 64)
+		if err != nil {
+			i, err := strconv.ParseFloat(a, 64)
+			if err != nil {
+				return nil
+			}
+			return i
+		}
+		return i
+	default:
+		return nil
 	}
-	switch resp.Body.(type) {
-	case respBodyMap:
-		tmpl.Execute(wr, resp.Body.(respBodyMap))
-	case respBodySlice:
-		tmpl.Execute(wr, resp.Body.(respBodySlice))
-	}
-	return wr.String()
+}
+
+func GetDateTime() string {
+	timeStamp := time.Now().Unix()
+	return time.Unix(timeStamp, 0).Format("20060102_150405")
+}
+
+//const (
+//	KILL         = os.Kill
+//	SIGINT       = os.Interrupt
+//	REPORTS_DONE = syscall.SIGUSR1
+//)
+
+var sigChan = make(chan bool)
+
+func WaitSignal() {
+	<-sigChan
+}
+
+func SendSignal() {
+	sigChan <- true
+}
+
+func Now4ms() int64 {
+	return time.Now().UnixNano() / 1e6
 }

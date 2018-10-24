@@ -131,7 +131,7 @@ func (this *Runner) doRequest(request *http.Request) validation.Response {
 	startTime := utils.Now4ms()
 	response, err := this.Core.Do(request)
 	elapsed := utils.Now4ms() - startTime
-	resp := validation.Response{Elapsed: elapsed, Header: response.Header}
+	resp := validation.Response{Elapsed: elapsed}
 	api := request.URL.String()
 	if err != nil {
 		resp.ErrMsg = err.Error()
@@ -140,6 +140,7 @@ func (this *Runner) doRequest(request *http.Request) validation.Response {
 			response.Body.Close()
 		}
 	} else {
+		resp.Header = response.Header
 		if response.StatusCode == http.StatusOK {
 			log.Println(request.Method, api, elapsed, response.ContentLength)
 		} else {

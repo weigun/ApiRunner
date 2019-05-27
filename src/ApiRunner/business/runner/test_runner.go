@@ -30,6 +30,7 @@ func (r *TestRunner) Start() {
 	valueCtx := context.WithValue(ctx, `status`, r.Status)
 	r.canceler = cancel
 	go func(ctx context.Context) {
+		//TODO 需要保存堆栈
 		go execute(r) //用例执行
 		select {
 		case <-ctx.Done():
@@ -58,6 +59,8 @@ func execute(r *TestRunner) {
 	default:
 		log.Printf(`unknow caseobj type:%T,stop runner`, r.CaseObj)
 		r.canceler()
+		return
 	}
 	_ = caseObj
+	//顺序执行用例
 }

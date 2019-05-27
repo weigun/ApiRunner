@@ -1,0 +1,21 @@
+config:
+  name: "signup"
+  host: $base_url
+  variables:
+    g_email: "${gen_email()}"
+    base_url: http://game.ixbow.com/
+apis:
+  - name: email-normal
+    api: signup.yaml
+    variables:
+        email: $g_email
+    validate:
+      - op: eq
+        source: "{{.body.msg}}"
+        verified: ok
+      - op: eq
+        source: "{{.body.token}}"
+        verified: asdasdasdas
+      - op: eq
+        source: "{{.body.data.num}}"
+        verified: 10

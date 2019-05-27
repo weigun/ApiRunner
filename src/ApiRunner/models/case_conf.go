@@ -2,7 +2,7 @@
 package models
 
 type CaseConfig struct {
-	Name      string      `json:"name"`
-	Host      string      `json:"host"`
-	Variables []Variables `json:"variables"`
+	Name      string    `json:"name"`
+	Host      string    `json:"host"`
+	Variables Variables `json:"variables"`
 }

@@ -8,13 +8,13 @@ import (
 
 type API struct {
 	Name          string        `json:"name"`
-	Variables     []Variables   `json:"variables"`
+	Variables     Variables     `json:"variables"`
 	Path          string        `json:"path"`
 	Method        string        `json:"method"`
-	Headers       []Header      `json:"headers,omitempty"`
+	Headers       Header        `json:"headers,omitempty"`
 	Params        Params        `json:"params,omitempty"`
-	Export        []Variables   `json:"export"`
-	MultipartFile MultipartFile `json:"files,omitempty"`
+	Export        Variables     `json:"export"`
+	MultipartFile MultipartFile `json:"multifiles,omitempty"`
 	Validate      []Validator   `json:"validate"`
 }
 
@@ -31,24 +31,27 @@ func (api *API) Json() string {
 	return string(jsonStr)
 }
 
-type Variables struct {
-	Name string
-	Val  interface{}
-}
+// type Variables struct {
+// 	Name string
+// 	Val  interface{}
+// }
+type Variables = map[string]interface{}
 
-type Header struct {
-	Key, Val string
-}
+type Header = map[string]interface{}
+
+// type Header struct {
+// 	Key, Val string
+// }
 
 type Params = map[string]interface{}
 
 type Validator struct {
-	Op       string
-	Source   interface{}
-	Verified interface{}
+	Op       string      `json:"op"`
+	Source   interface{} `json:"source"`
+	Verified interface{} `json:"verified"`
 }
 
 type MultipartFile struct {
-	Params Params //上传的数据
-	Files  Params //文件列表
+	Params Params `json:"params"` //上传的数据
+	Files  Params `json:"files"`  //文件列表
 }

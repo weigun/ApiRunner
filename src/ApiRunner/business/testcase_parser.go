@@ -30,9 +30,9 @@ func ParseTestCase(filePath string) (caseObj models.ICaseObj, err error) {
 	switch filepath.Ext(filePath) {
 	case `.yaml`, `yml`:
 		return parseYamlCase(content)
-	case `json`:
+	case `.json`, `conf`:
 		return parseJsonCase(content)
-	case `toml`, `tml`:
+	case `.toml`, `.tml`:
 		return parseTomlCase(content)
 	}
 }
@@ -44,7 +44,7 @@ func parseYamlCase(content []byte) (caseObj models.ICaseObj, err error) {
 		log.Printf("parse yaml error: %v", err)
 		return
 	}
-	fmt.Printf("--- m:\n%v\n\n", m)
+	fmt.Printf("--- yaml m:\n%v\n\n", m)
 	caseObj, err = _parseTestCase(m)
 	return
 }
@@ -56,7 +56,7 @@ func parseJsonCase(content []byte) (caseObj models.ICaseObj, err error) {
 		log.Printf("parse json error: %v", err)
 		return
 	}
-	fmt.Printf("--- m:\n%v\n\n", m)
+	fmt.Printf("--- json m:\n%v\n\n", m)
 	caseObj, err = _parseTestCase(m)
 	return
 }
@@ -68,7 +68,7 @@ func parseTomlCase(content []byte) (caseObj models.ICaseObj, err error) {
 		log.Printf("parse toml error: %v", err)
 		return
 	}
-	fmt.Printf("--- m:\n%v\n\n", m)
+	fmt.Printf("--- toml m:\n%v\n\n", m)
 	caseObj, err = _parseTestCase(m)
 	return
 }

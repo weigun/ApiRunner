@@ -184,7 +184,7 @@ func _parseTestCase(ts map[string]interface{}) (caseObj ICaseObj, err error) {
 		return
 	}
 	spew.Dump(ts)
-	for _, apiItem := range ts[`apis`].([]interface{}) {
+	for index, apiItem := range ts[`apis`].([]interface{}) {
 		//遍历接口列表，对rawApi的成员进行替换
 		apiItem := apiItem.(map[interface{}]interface{})
 		rawApi := require(apiItem[`api`].(string))
@@ -227,6 +227,7 @@ func _parseTestCase(ts map[string]interface{}) (caseObj ICaseObj, err error) {
 				}
 			}
 		}
+		ts[`apis`].([]interface{})[index] = rawApi
 	}
 	spew.Dump(ts)
 	return

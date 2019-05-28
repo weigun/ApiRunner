@@ -10,7 +10,7 @@ type CaseItem = map[string]TestCase
 
 type TestSuites struct {
 	Config   CaseConfig `json:"config"`
-	CaseList []CaseItem `json:"case_list"`
+	CaseList []CaseItem `json:"testcases"`
 }
 
 func (ts *TestSuites) GetName() string {

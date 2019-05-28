@@ -100,7 +100,7 @@ type CaseItem = map[string]TestCase
 
 type TestSuites struct {
 	Config   CaseConfig `json:"config"`
-	CaseList []CaseItem `json:"case_list"`
+	CaseList []CaseItem `json:"testcases"`
 }
 
 func (ts *TestSuites) GetName() string {
@@ -117,75 +117,44 @@ func (ts *TestSuites) Json() string {
 }
 
 func ParseTestCase(filePath string) (caseObj ICaseObj, err error) {
-	// if !utils.Exists(filePath) {
-	// 	err = errors.New(fmt.Sprintf(`testcase file not found,%s`, filePath))
-	// 	return
-	// }
-	log.Printf("ReadFile: %v", filePath)
-	content, e := ioutil.ReadFile(filePath)
-	if e != nil {
-		log.Printf("ReadFile error: %v", err)
-		err = e
-		return
-	}
-	switch filepath.Ext(filePath) {
-	case `.yaml`, `yml`:
-		return parseYamlCase(content)
-	case `.json`, `.conf`:
-		log.Printf("parse json: %v", filePath)
-		return parseJsonCase(content)
-	case `.toml`, `.tml`:
-		return parseTomlCase(content)
-	default:
-		return
-	}
-}
-
-func parseYamlCase(content []byte) (caseObj ICaseObj, err error) {
-	// m := []map[string]interface{}{}
-	m := map[string]interface{}{}
-	err = yaml.Unmarshal(content, &m)
-	if err != nil {
-		log.Printf("parse yaml error: %v", err)
-		return
-	}
-	fmt.Printf("--- yaml m:\n%v\n\n", m)
-	caseObj, err = _parseTestCase(m)
+	m := require(filePath)
+	caseMap := _parseTestCase(m)
+	_ = caseMap
+	spew.Dump(caseMap)
 	return
 }
 
-func parseJsonCase(content []byte) (caseObj ICaseObj, err error) {
-	m := map[string]interface{}{}
-	err = json.Unmarshal(content, &m)
-	if err != nil {
-		log.Printf("parse json error: %v", err)
-		return
-	}
-	fmt.Printf("--- json m:\n%v\n\n", m)
-	caseObj, err = _parseTestCase(m)
-	return
-}
-
-func parseTomlCase(content []byte) (caseObj ICaseObj, err error) {
-	m := map[string]interface{}{}
-	err = toml.Unmarshal(content, &m)
-	if err != nil {
-		log.Printf("parse toml error: %v", err)
-		return
-	}
-	fmt.Printf("--- toml m:\n%v\n\n", m)
-	caseObj, err = _parseTestCase(m)
-	return
-}
-
-func _parseTestCase(ts map[string]interface{}) (caseObj ICaseObj, err error) {
+// func _parseTestCase(ts map[string]interface{}) (caseObj ICaseObj, err error) {
+func _parseTestCase(ts map[string]interface{}) (caseMap map[string]interface{}) {
 	// caseConf := ts[`config`]
-	if _, ok := ts[`apis`]; !ok {
-		return
+	if _, ok := ts[`apis`]; ok {
+		// testcase here
+		parseSingleCase(ts)
+		caseMap = ts
+
+	} else if _, ok := ts[`testcases`]; ok {
+		// testsuits here
+		for index, caseInfo := range ts[`testcases`].([]interface{}) {
+			caseInfo := caseInfo.(map[interface{}]interface{})
+			for caseDesc, caseFile := range caseInfo {
+				m := require(caseFile.(string))
+				log.Println(`testsuit`)
+				oneCase := _parseTestCase(m) //递归解析用例集
+				//oneCase是一个测试集中一个用例的map
+				caseInfo[caseDesc] = oneCase
+			}
+			ts[`testcases`].([]interface{})[index] = caseInfo
+		}
+		caseMap = ts
 	}
-	spew.Dump(ts)
+	// spew.Dump(caseMap)
+	return
+}
+
+func parseSingleCase(ts map[string]interface{}) {
 	for index, apiItem := range ts[`apis`].([]interface{}) {
 		//遍历接口列表，对rawApi的成员进行替换
+
 		apiItem := apiItem.(map[interface{}]interface{})
 		rawApi := require(apiItem[`api`].(string))
 		for key, val := range apiItem {
@@ -201,13 +170,6 @@ func _parseTestCase(ts map[string]interface{}) (caseObj ICaseObj, err error) {
 				case int, int8, int16, int32, int64, float32, float64, string, bool:
 					//直接替换
 					rawApi[key] = val
-				// case map[string]interface{}:
-				// 	//合并map
-				// 	itemPtr := rawApi[key].(map[string]interface{}) //因为多级map不可寻址，需要先提取整个val出来才能引用
-				// 	for k, v := range val.(map[string]interface{}) {
-				// 		itemPtr[k] = v
-				// 	}
-				// 	rawApi[key] = itemPtr //需要回写才能更新
 				case []interface{}:
 					//合并列表
 					itemListPtr := rawApi[key].([]interface{}) // 方便引用
@@ -229,38 +191,39 @@ func _parseTestCase(ts map[string]interface{}) (caseObj ICaseObj, err error) {
 		}
 		ts[`apis`].([]interface{})[index] = rawApi
 	}
-	spew.Dump(ts)
-	return
 }
 
-func require(apiPath string) map[string]interface{} {
-	log.Printf("ReadFile: %v", apiPath)
+func require(casePath string) map[string]interface{} {
+
+	// 将依赖的用例或者接口包含进当前用例
+
+	log.Printf("ReadFile: %v", casePath)
 	// TODO 需要设置根目录
-	content, err := ioutil.ReadFile(apiPath)
+	content, err := ioutil.ReadFile(casePath)
 	if err != nil {
-		log.Fatal("ReadFile error: %v", err)
+		log.Fatal("ReadFile error:", err)
 	}
-	rawApi := make(map[string]interface{})
-	switch filepath.Ext(apiPath) {
+	raw := make(map[string]interface{})
+	switch filepath.Ext(casePath) {
 	case `.yaml`, `yml`:
-		err = yaml.Unmarshal(content, &rawApi)
+		err = yaml.Unmarshal(content, &raw)
 		if err != nil {
-			log.Fatal("parse yaml error: %s", err.Error())
+			log.Fatal("parse yaml error:", err.Error())
 		}
 	case `.json`, `.conf`:
-		err = json.Unmarshal(content, &rawApi)
+		err = json.Unmarshal(content, &raw)
 		if err != nil {
-			log.Fatal("parse json error: %s", err.Error())
+			log.Fatal("parse json error:", err.Error())
 		}
 	case `.toml`, `.tml`:
-		err = toml.Unmarshal(content, &rawApi)
+		err = toml.Unmarshal(content, &raw)
 		if err != nil {
-			log.Fatal("parse toml error: %s", err.Error())
+			log.Fatal("parse toml error:", err.Error())
 		}
 	default:
-		log.Fatal("not support case format: %v", filepath.Ext(apiPath))
+		log.Fatal("not support case format:", filepath.Ext(casePath))
 	}
-	return rawApi
+	return raw
 }
 
 func main() {
@@ -268,5 +231,6 @@ func main() {
 	ParseTestCase(`signup.conf`)
 	ParseTestCase(`signup.yaml`)
 	ParseTestCase(`signup_case.yaml`)
+	ParseTestCase(`all.yaml`)
 
 }

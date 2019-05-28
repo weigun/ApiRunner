@@ -1,0 +1,8 @@
+config:
+    name: all
+    variables:
+      base_url: http://depay.ixbow.com
+
+testcases:
+  - singup: signup_case.yaml
+  - login: signup_case.yaml

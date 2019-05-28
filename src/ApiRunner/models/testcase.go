@@ -11,8 +11,8 @@ type ICaseObj interface {
 }
 
 type TestCase struct {
-	Config CaseConfig `json:"config"`
-	APIS   []API      `json:"apis"`
+	Config CaseConfig `json:"config"   yaml:"config" toml:"config"`
+	APIS   []API      `json:"apis"  yaml:"apis" toml:"apis"`
 }
 
 func (tc *TestCase) GetName() string {

@@ -9,8 +9,8 @@ import (
 type CaseItem = map[string]TestCase
 
 type TestSuites struct {
-	Config   CaseConfig `json:"config"`
-	CaseList []CaseItem `json:"testcases"`
+	Config   CaseConfig `json:"config"  yaml:"config" toml:"config"`
+	CaseList []CaseItem `json:"testcases"  yaml:"testcases" toml:"testcases"`
 }
 
 func (ts *TestSuites) GetName() string {

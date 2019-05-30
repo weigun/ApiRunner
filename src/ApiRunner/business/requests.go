@@ -1,8 +1,8 @@
 // requests.go
-package runner
+package business
 
 import (
-	// "bytes"
+	"bytes"
 	"crypto/tls"
 	"io"
 	"io/ioutil"
@@ -18,56 +18,55 @@ import (
 )
 
 const (
-	timeout = 60
-	maxConn = 100 //连接池数
+	TIMEOUT          = 60
+	MAX_CONNEECTIONS = 100 //连接池数
 )
 
 var client *http.Client
 var once sync.Once
 
 func makeClient() {
-	//TODO 可能非线程安全，需要改为once.DO方式
 	once.Do(func() {
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
-			MaxIdleConnsPerHost: maxConn,
-			MaxIdleConns:        maxConn,
+			MaxIdleConnsPerHost: MAX_CONNEECTIONS,
+			MaxIdleConns:        MAX_CONNEECTIONS,
 			DisableCompression:  true,
 			DisableKeepAlives:   false,
 		}
 		client = &http.Client{
 			Transport: tr,
-			Timeout:   time.Duration(timeout) * time.Second,
+			Timeout:   time.Duration(TIMEOUT) * time.Second,
 		}
 	})
 }
 
-type httpClient struct {
-	Core *http.Client
+type requests struct {
+	client *http.Client
 }
 
-func GetHttpClient() *httpClient {
+func NewRequestor() *requests {
 	makeClient()
-	return &httpClient{client}
+	return &requests{client}
 }
 
-func (this *httpClient) Get(url string, params Params) Response {
+func (this *requests) Get(url string, params Params) *Response {
 	request := buildRequest(url, "GET", encode(params))
 	return this.doRequest(request)
 }
 
-func (this *httpClient) Post(url string, params Params) Response {
-	request := buildRequest(url, "POST", encode(params))
+func (this *requests) Post(url string, params Params) *Response {
+	request := buildRequest(url, "POST", toJson(params))
 	return this.doRequest(request)
 }
 
-func (this *httpClient) doRequest(request *http.Request) Response {
+func (this *requests) doRequest(request *http.Request) *Response {
 	//执行请求
 	// log.Println("-------before request:", request)
 	resp := Response{}
-	response, err := this.Core.Do(request)
+	response, err := this.client.Do(request)
 	if err != nil {
 		resp.ErrMsg = err.Error()
 		if response != nil {
@@ -86,7 +85,7 @@ func (this *httpClient) doRequest(request *http.Request) Response {
 		response.Body.Close()
 		io.Copy(ioutil.Discard, response.Body)
 	}
-	return resp
+	return &resp
 }
 
 type Params map[string]interface{}
@@ -107,27 +106,16 @@ func toJson(params Params) string {
 
 func buildRequest(url, method, data string) *http.Request {
 	//构造请求体
-	//	fmt.Println("CaseItem:", this)
-	// api := this.Api
-	// method := this.Method
-	// var data string
-	// if len(this.Params.Params) == 0 {
-	// 	data = ""
-	// } else {
-	// 	data = this.Params.Conver(uid, this.Method)
-	// }
-	// log.Println("BuildRequest:", data)
-	// bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
-	req, err := http.NewRequest(method, url, nil)
+	log.Println("BuildRequest:", data)
+	bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
+	req, err := http.NewRequest(method, url, bodyData)
 	if err != nil {
-		panic(err.Error())
+		log.Printf(`buildRequest error %v\n`, err.Error())
 	}
-	req.URL.RawQuery = data
-	// log.Println(req)
-	// for _, h := range this.Headers {
-	// 	//		fmt.Println("-------------", h)
-	// 	req.Header.Add(h.Key, h.Conver(uid))
-	// }
+	if method == `GET` {
+		req.URL.RawQuery = data
+	}
+	//TODO add header
 	return req
 }
 
@@ -135,16 +123,4 @@ type Response struct {
 	Code    int
 	Content string
 	ErrMsg  string
-}
-
-func (this Response) GetCode() int {
-	return this.Code
-}
-
-func (this Response) GetContent() string {
-	return this.Content
-}
-
-func (this Response) GetErrMsg() string {
-	return this.ErrMsg
 }

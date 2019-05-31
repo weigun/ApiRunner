@@ -5,9 +5,16 @@ import (
 	"fmt"
 )
 
+const (
+	TYPE_API = iota
+	TYPE_TESTCASE
+	TYPE_TESTSUITS
+)
+
 type ICaseObj interface {
 	GetName() string
 	Json() string
+	GetType() int
 }
 
 type TestCase struct {
@@ -26,4 +33,8 @@ func (tc *TestCase) Json() string {
 		return `{}`
 	}
 	return string(jsonStr)
+}
+
+func (tc *TestCase) GetType() int {
+	return TYPE_TESTCASE
 }

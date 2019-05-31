@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"ApiRunner/models"
 	"ApiRunner/utils"
 )
 
@@ -52,13 +53,13 @@ func NewRequestor() *requests {
 	return &requests{client}
 }
 
-func (this *requests) Get(url string, params Params) *Response {
-	request := buildRequest(url, "GET", encode(params))
+func (this *requests) Get(url string, params models.Params) *Response {
+	request := this.BuildRequest(url, "GET", params)
 	return this.doRequest(request)
 }
 
-func (this *requests) Post(url string, params Params) *Response {
-	request := buildRequest(url, "POST", toJson(params))
+func (this *requests) Post(url string, params models.Params) *Response {
+	request := this.BuildRequest(url, "POST", params)
 	return this.doRequest(request)
 }
 
@@ -88,6 +89,28 @@ func (this *requests) doRequest(request *http.Request) *Response {
 	return &resp
 }
 
+func (this *requests) BuildRequest(url, method string, params models.Params) *http.Request {
+	//构造请求体
+	log.Println("BuildRequest:", params)
+	var data string
+	switch method {
+	case `GET`:
+		data = encode(params)
+	case `POST`:
+		data = toJson(params)
+	}
+	bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
+	req, err := http.NewRequest(method, url, bodyData)
+	if err != nil {
+		log.Printf(`BuildRequest error %v\n`, err.Error())
+	}
+	if method == `GET` {
+		req.URL.RawQuery = data
+	}
+	//TODO add header
+	return req
+}
+
 type Params map[string]interface{}
 
 func encode(params Params) string {
@@ -102,21 +125,6 @@ func encode(params Params) string {
 func toJson(params Params) string {
 	//转json，用于post方法
 	return utils.Map2Json(params)
-}
-
-func buildRequest(url, method, data string) *http.Request {
-	//构造请求体
-	log.Println("BuildRequest:", data)
-	bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
-	req, err := http.NewRequest(method, url, bodyData)
-	if err != nil {
-		log.Printf(`buildRequest error %v\n`, err.Error())
-	}
-	if method == `GET` {
-		req.URL.RawQuery = data
-	}
-	//TODO add header
-	return req
 }
 
 type Response struct {

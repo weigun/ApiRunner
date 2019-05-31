@@ -25,3 +25,7 @@ func (ts *TestSuites) Json() string {
 	}
 	return string(jsonStr)
 }
+
+func (ts *TestSuites) GetType() int {
+	return TYPE_TESTSUITS
+}

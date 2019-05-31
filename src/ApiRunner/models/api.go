@@ -30,6 +30,9 @@ func (api *API) Json() string {
 	}
 	return string(jsonStr)
 }
+func (api *API) GetType() int {
+	return TYPE_API
+}
 
 // type Variables struct {
 // 	Name string

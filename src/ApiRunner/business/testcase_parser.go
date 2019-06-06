@@ -12,11 +12,11 @@ import (
 
 	// toml "github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/json-iterator/go"
+	// "github.com/json-iterator/go"
 	"gopkg.in/yaml.v2"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func ParseTestCase(filePath string) (caseObj models.ICaseObj) {
 	m := require(filePath)
@@ -147,12 +147,12 @@ func toObj(caseMap map[string]interface{}, ext string) models.ICaseObj {
 		if isTestSuits {
 			//用例集
 			var ts models.TestSuites
-			yaml.Unmarshal(byteCaseMap, &ts)
+			json.Unmarshal(byteCaseMap, &ts)
 			return &ts
 		} else {
 			//单个用例
 			var ts models.TestCase
-			yaml.Unmarshal(byteCaseMap, &ts)
+			json.Unmarshal(byteCaseMap, &ts)
 			return &ts
 		}
 	default:

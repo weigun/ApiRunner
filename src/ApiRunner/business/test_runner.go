@@ -1,5 +1,5 @@
 // test_runner.go
-package runner
+package business
 
 import (
 	"context"
@@ -8,13 +8,8 @@ import (
 	"log"
 	_ "net/url"
 
-	"ApiRunner/business"
 	"ApiRunner/models"
-
-	"github.com/json-iterator/go"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 const (
 	Queuing = iota
@@ -74,21 +69,21 @@ func execute(r *TestRunner) {
 	}
 
 	//顺序执行用例
-	requestor := business.NewRequestor()
+	requestor := NewRequestor()
 	_type := caseObj.GetType()
 	if _type == models.TYPE_TESTCASE {
 		caseObj := r.CaseObj.(*models.TestCase)
 		//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
 		//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
 		var caseConf models.CaseConfig
-		err := business.RenderObj(caseObj.Config.Json(), true, &caseConf)
+		err := RenderObj(caseObj.Config.Json(), true, &caseConf)
 		if err != nil {
 			log.Println(`renderObj error:`, err.Error())
 			return
 		}
 		caseObj.Config = caseConf
 		for index, api := range caseObj.APIS {
-			url := fmt.Sprintf(`%s/%s`, business.RenderValue(caseObj.Config.Host, true), business.RenderValue(api.Path, true))
+			url := fmt.Sprintf(`%s/%s`, RenderValue(caseObj.Config.Host, true), RenderValue(api.Path, true))
 			// TODO:
 			// 模板翻译
 			// 拦截器

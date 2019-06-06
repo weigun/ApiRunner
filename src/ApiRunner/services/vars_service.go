@@ -3,6 +3,8 @@ package services
 
 import (
 	"ApiRunner/dao"
+	"strings"
+
 	//"ApiRunner/models"
 	//"encoding/json"
 	"errors"
@@ -16,6 +18,8 @@ import (
 type VarsManager struct {
 	cache dao.Cache
 }
+
+var VarsMgr *VarsManager
 
 const (
 	DefaultVarsMgrKey = `VarsMgr`
@@ -44,4 +48,19 @@ func (vm *VarsManager) Get(key string) string {
 	key = fmt.Sprintf(`%s:%s`, DefaultVarsMgrKey, key)
 	val := vm.cache.Get(key)
 	return val
+}
+
+func (vm *VarsManager) GetByGroup(groupKey string) map[string]string {
+	key := fmt.Sprintf(`%s:%s`, DefaultVarsMgrKey, groupKey)
+	m := make(map[string]string)
+	splitChar := `:`
+	for _, k := range vm.cache.Keys(fmt.Sprintf(`%s*`, key)) {
+		_k := strings.Split(k, splitChar)[strings.Count(k, splitChar)+1]
+		m[_k] = vm.cache.Get(_k)
+	}
+	return m
+}
+
+func init() {
+	VarsMgr = &VarsManager{dao.GetCache()}
 }

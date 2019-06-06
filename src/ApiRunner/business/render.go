@@ -5,7 +5,7 @@ import (
 	"ApiRunner/models"
 	"strings"
 
-	// "ApiRunner/services"
+	"ApiRunner/services"
 	"fmt"
 
 	"bytes"
@@ -17,29 +17,39 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-//TODO 模板缓存
+type renderer struct {
+	tag string
+}
 
-func render(source string, renderVars bool) []byte {
+func newRenderer(tag string) *renderer {
+	return &renderer{tag}
+}
+
+func (r *renderer) render(source string, renderVars bool) []byte {
 	/*
 		渲染测试用例
 		将用例中的模板格式全部转换为具体内容
 		当renderVars=true时，表示需要渲染自定义变量，否则不渲染
 	*/
-	tmpl, err := template.New("testcase").Funcs(funcMap).Parse(source)
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+	tmpl := template.New("testcase").Funcs(funcMap)
 	wr := bytes.NewBufferString(``)
 	if renderVars {
 		// services.VarsMgr.Get(`key`)
 		if strings.Index(source, `{{$`) != -1 {
 			// 存在变量引用
-			source := strings.Replace(source, `$`, `.`, -1)
-
+			key := fmt.Sprintf(`.%s.`, r.tag)
+			source := strings.Replace(source, `$`, key, -1)
+			tmpl, err := tmpl.Parse(source)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
 		} else {
 
 		}
-		tmpl.Execute(wr, nil)
+		//从变量服务中取出需要的变量
+		// varsMap := make(map[string]string)
+		varsMap := ervices.VarsMgr.GetByGroup(r.tag)
+		tmpl.Execute(wr, varsMap)
 	} else {
 		tmpl.Execute(wr, nil)
 	}

@@ -7,8 +7,12 @@ import (
 	_ "fmt"
 	"log"
 	_ "net/url"
+	"regexp"
+	"strings"
 
 	"ApiRunner/models"
+	"ApiRunner/services"
+	"ApiRunner/utils"
 )
 
 const (
@@ -69,6 +73,7 @@ func execute(r *TestRunner) {
 	}
 
 	//顺序执行用例
+	render := newRenderer(r.ID)
 	requestor := NewRequestor()
 	_type := caseObj.GetType()
 	if _type == models.TYPE_TESTCASE {
@@ -76,14 +81,14 @@ func execute(r *TestRunner) {
 		//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
 		//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
 		var caseConf models.CaseConfig
-		err := RenderObj(caseObj.Config.Json(), true, &caseConf)
+		err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
 		if err != nil {
 			log.Println(`renderObj error:`, err.Error())
 			return
 		}
 		caseObj.Config = caseConf
-		for index, api := range caseObj.APIS {
-			url := fmt.Sprintf(`%s/%s`, RenderValue(caseObj.Config.Host, true), RenderValue(api.Path, true))
+		for _, api := range caseObj.APIS {
+			url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
 			// TODO:
 			// 模板翻译
 			// 拦截器
@@ -122,11 +127,38 @@ func execute(r *TestRunner) {
 			       Files: (map[string]interface {}) <nil>
 			      },
 			*/
-			req := requestor.BuildRequest(url, api.Method, api.Params)
+			var params models.Params
+			render.renderObj(toJson(api.Params), true, &params)
+			req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params)
 			// add header
 			for k, v := range api.Headers {
-				req.Header.Add(k, v.(string))
+				req.Header.Add(k, render.renderValue(v.(string), true))
 			}
+			resp := requestor.doRequest(req)
+			//导出变量，如token等
+			for ek, ev := range api.Export {
+				v := ev.(string)
+				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
+					//返回json则需要提取变量
+					contentMap := utils.Json2Map([]byte(resp.Content))
+					data := make(map[string]map[string]interface{})
+					data[`body`] = contentMap
+					bindVal := render.renderWithData(v, data)
+					services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
+					log.Println("add ExportVars:", render.tag, ek, bindVal)
+				} else {
+					//plain text
+					regx := regexp.MustCompile(v)
+					match := regx.FindStringSubmatch(resp.Content)
+					if match != nil {
+						//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
+						services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
+						// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
+						log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
+					}
+				}
+			}
+
 		}
 	}
 }

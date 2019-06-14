@@ -43,13 +43,14 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
+			//从变量服务中取出需要的变量
+			m := services.VarsMgr.GetByGroup(r.tag)
+			varsMap := make(map[string]map[string]string)
+			varsMap[r.tag] = m
+			tmpl.Execute(wr, varsMap)
 		} else {
-
+			tmpl.Execute(wr, nil)
 		}
-		//从变量服务中取出需要的变量
-		// varsMap := make(map[string]string)
-		varsMap := ervices.VarsMgr.GetByGroup(r.tag)
-		tmpl.Execute(wr, varsMap)
 	} else {
 		tmpl.Execute(wr, nil)
 	}
@@ -57,19 +58,31 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 
 }
 
-func RenderObj(source string, renderVars bool, modelPtr interface{}) error {
-	objStr := render(source, renderVars)
+func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{}) error {
+	objStr := r.render(source, renderVars)
 	switch modelPtr.(type) {
 	case models.CaseConfig:
 		return json.Unmarshal(objStr, modelPtr.(models.CaseConfig))
 	case models.ICaseObj:
 		return json.Unmarshal(objStr, modelPtr.(models.ICaseObj))
+	case models.Params:
+		return json.Unmarshal(objStr, modelPtr.(models.Params))
 	default:
 		log.Fatalln(fmt.Sprintf(`unknow model %T`, modelPtr))
 	}
 	return nil
 }
 
-func RenderValue(val string, renderVars bool) string {
-	return string(render(val, renderVars))
+func (r *renderer) renderValue(val string, renderVars bool) string {
+	return string(r.render(val, renderVars))
+}
+
+func (r *renderer) renderWithData(source string, data interface{}) string {
+	tmpl, err := template.New("testcase").Funcs(funcMap).Parse(source)
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	wr := bytes.NewBufferString(``)
+	tmpl.Execute(wr, data)
+	return wr.String()
 }

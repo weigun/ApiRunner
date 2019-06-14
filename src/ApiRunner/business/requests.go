@@ -111,9 +111,7 @@ func (this *requests) BuildRequest(url, method string, params models.Params) *ht
 	return req
 }
 
-type Params map[string]interface{}
-
-func encode(params Params) string {
+func encode(params models.Params) string {
 	//编码查询参数
 	query := Url.Values{}
 	for k, v := range params {
@@ -122,7 +120,7 @@ func encode(params Params) string {
 	return query.Encode()
 }
 
-func toJson(params Params) string {
+func toJson(params models.Params) string {
 	//转json，用于post方法
 	return utils.Map2Json(params)
 }

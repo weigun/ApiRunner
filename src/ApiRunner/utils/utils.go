@@ -3,14 +3,11 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
-	_ "fmt"
+	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
-	"text/template"
 	"time"
 )
 
@@ -31,27 +28,6 @@ func Json2Map(js []byte) map[string]interface{} {
 	return mapResult
 }
 
-func Params2Map(s string) map[string]interface{} {
-	// 将id=1&name=weigun这种形式的参数转为map
-	m := make(map[string]interface{})
-	for _, para := range strings.Split(s, "&") {
-		pSlice := strings.Split(para, "=")
-		if len(pSlice) == 2 {
-			m[pSlice[0]] = pSlice[1]
-		}
-	}
-	return m
-}
-
-func Header2Json(h http.Header) string {
-	//map[string][]string
-	m := make(map[string]interface{})
-	for k, v := range h {
-		m[k] = v
-	}
-	return Map2Json(m)
-}
-
 func GetCwd() string {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0])) //返回绝对路径  filepath.Dir(os.Args[0])去除最后一个元素的路径
 	if err != nil {
@@ -59,82 +35,6 @@ func GetCwd() string {
 	}
 	return dir
 }
-
-//func runLocalTasks(tasks []string) {
-//	//单次执行用例
-//	eng := NewEngine()
-//	curFolder := getCwd()
-//	var wg sync.WaitGroup
-//	for i, v := range tasks {
-//		casePath := filepath.Join(curFolder, "testcase", v+".json")
-//		caseParser := NewCaseParser(casePath)
-//		rn := NewRunner{caseParser.getCaseset()}
-//		wg.Add(1)
-//		go func(rn runner) {
-//			defer wg.Done()  //TODO 可能需要放在safeRun下一行
-//			rn.ready <- true //缓冲chan
-//			eng.safeRun(rn)
-//		}(rn) //copy rn
-//	}
-//	wg.Wait()
-//	//	TODO 生成报告
-//	log.Println("test done")
-//}
-
-//func getErr(api string, code int) string {
-//	//请求错误码格式化
-//	return fmt.Sprintf(`%s failed,StatusCode is %d`, api, code)
-//}
-
-type dataInterface interface {
-	GetData() map[string]interface{}
-}
-
-func GetTemplate(_func *template.FuncMap) *template.Template {
-	t := template.New("conf")
-	if _func != nil {
-		t.Funcs(*_func)
-	}
-	return t //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
-}
-
-func Translate(tmpl *template.Template, tmplStr string, obj dataInterface) string {
-	//将模板翻译
-	/*
-		2种情况
-		1.有且只自定义变量
-		2.没有自定义变量
-	*/
-	wr := bytes.NewBufferString("")
-	tmpl, err := tmpl.Parse(tmplStr)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if obj == nil {
-		tmpl.Execute(wr, nil)
-	} else {
-		//		log.Println("===============", obj, obj.GetData())
-		tmpl.Execute(wr, obj.GetData())
-	}
-	return wr.String()
-}
-
-//func translateValidata(data string, resp validation) string {
-//	//将模板翻译
-//	tmpl := getTemplate() //不能放到全局或者通过闭包的方式，因为这个是携程不安全的
-//	wr := bytes.NewBufferString("")
-//	tmpl, err := tmpl.Parse(data)
-//	if err != nil {
-//		log.Fatalln(err)
-//	}
-//	switch resp.Body.(type) {
-//	case respBodyMap:
-//		tmpl.Execute(wr, resp.Body.(respBodyMap))
-//	case respBodySlice:
-//		tmpl.Execute(wr, resp.Body.(respBodySlice))
-//	}
-//	return wr.String()
-//}
 
 func ToNumber(a interface{}) interface{} {
 	switch a.(type) {
@@ -161,22 +61,18 @@ func GetDateTime() string {
 	return time.Unix(timeStamp, 0).Format("20060102_150405")
 }
 
-//const (
-//	KILL         = os.Kill
-//	SIGINT       = os.Interrupt
-//	REPORTS_DONE = syscall.SIGUSR1
-//)
-
-var sigChan = make(chan bool)
-
-func WaitSignal() {
-	<-sigChan
-}
-
-func SendSignal() {
-	sigChan <- true
-}
-
 func Now4ms() int64 {
 	return time.Now().UnixNano() / 1e6
+}
+
+// 判断所给路径文件/文件夹是否存在
+func Exists(path string) bool {
+	_, err := os.Stat(path) //os.Stat获取文件信息
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
 }

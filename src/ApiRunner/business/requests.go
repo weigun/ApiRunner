@@ -91,6 +91,7 @@ func (this *requests) doRequest(request *http.Request) *Response {
 
 func (this *requests) BuildRequest(url, method string, params models.Params) *http.Request {
 	//构造请求体
+	// TODO 加上文件上传
 	log.Println("BuildRequest:", params)
 	var data string
 	switch method {

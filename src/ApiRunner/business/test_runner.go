@@ -88,6 +88,11 @@ func execute(r *TestRunner) {
 		}
 		caseObj.Config = caseConf
 		for _, api := range caseObj.APIS {
+			if r.Status == Cancel {
+				// 如果runner的已经取消了，就没必要再去执行下一个用例了
+				log.Println(`executor stopping,because runner is canceled `)
+				return
+			}
 			url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
 			// TODO:
 			// 模板翻译
@@ -136,27 +141,38 @@ func execute(r *TestRunner) {
 			}
 			resp := requestor.doRequest(req)
 			//导出变量，如token等
-			for ek, ev := range api.Export {
-				v := ev.(string)
-				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
-					//返回json则需要提取变量
-					contentMap := utils.Json2Map([]byte(resp.Content))
-					data := make(map[string]map[string]interface{})
-					data[`body`] = contentMap
-					bindVal := render.renderWithData(v, data)
-					services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
-					log.Println("add ExportVars:", render.tag, ek, bindVal)
-				} else {
-					//plain text
-					regx := regexp.MustCompile(v)
-					match := regx.FindStringSubmatch(resp.Content)
-					if match != nil {
-						//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
-						services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
-						// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
-						log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
+			if resp.ErrMsg == `` {
+				//没有错误的时候才能导出变量
+				//TODO assert code??
+				for ek, ev := range api.Export {
+					v := ev.(string)
+					if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
+						//返回json则需要提取变量
+						contentMap := utils.Json2Map([]byte(resp.Content))
+						data := make(map[string]map[string]interface{})
+						data[`body`] = contentMap
+						bindVal := render.renderWithData(v, data)
+						services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
+						log.Println("add ExportVars:", render.tag, ek, bindVal)
+					} else {
+						//plain text
+						regx := regexp.MustCompile(v)
+						match := regx.FindStringSubmatch(resp.Content)
+						if match != nil {
+							//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
+							services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
+							// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
+							log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
+						}
 					}
 				}
+			}
+
+			//比较结果
+			for _, validator := range api.Validate {
+				compare := getAssertByOp(validator.Op)
+				isPassed := So(validator.Actual, compare, validator.Expected)
+				log.Printf(`Actual:%v,Expected:%v,So %v`, validator.Actual, validator.Expected, isPassed)
 			}
 
 		}

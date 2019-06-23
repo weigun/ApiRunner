@@ -50,8 +50,8 @@ type Params = map[string]interface{}
 
 type Validator struct {
 	Op       string      `json:"op"  yaml:"op" toml:"op"`
-	Source   interface{} `json:"source"  yaml:"source" toml:"source"`
-	Verified interface{} `json:"verified"  yaml:"verified" toml:"verified"`
+	Actual   interface{} `json:"actual"  yaml:"actual" toml:"actual"`
+	Expected interface{} `json:"expected"  yaml:"expected" toml:"expected"`
 }
 
 type MultipartFile struct {

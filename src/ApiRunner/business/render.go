@@ -44,6 +44,7 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 				log.Fatalln(err.Error())
 			}
 			//从变量服务中取出需要的变量
+			//TODO 如果没有找到变量，则懒加载？
 			m := services.VarsMgr.GetByGroup(r.tag)
 			varsMap := make(map[string]map[string]string)
 			varsMap[r.tag] = m

@@ -32,6 +32,13 @@ type TestRunner struct {
 	Status   int
 }
 
+func NewTestRunner(id string, caseObj models.ICaseObj) *TestRunner {
+	return &TestRunner{
+		ID:      id,
+		CaseObj: caseObj,
+	}
+}
+
 func (r *TestRunner) Start() {
 	log.Println("testrunner started")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -89,6 +96,10 @@ func execute(r *TestRunner) {
 			return
 		}
 		caseObj.Config = caseConf
+		//将全局变量同步到变量服务
+		for varName, varVal := range caseConf.Variables {
+			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+		}
 		spew.Dump(caseObj)
 		for _, api := range caseObj.APIS {
 			if r.Status == Cancel {

@@ -2,7 +2,7 @@ config:
   name: "signup"
   host: "{{$base_url}}"
   variables:
-    g_email: "${gen_email()}"
+    g_email: "{{gen_email}}"
     base_url: http://game.ixbow.com/
 apis:
   - name: email-normal

@@ -9,9 +9,9 @@ headers:
   Content-Type: "application/json"
   Authorization: ""
 params:
-  email: $email
-  password: $password
-  password_confirmation: $password_confirmation
+  email: "{{$email}}"
+  password: "{{$password}}"
+  password_confirmation: "{{$password_confirmation}}"
 Export: 
   token: "{{.body.token}}"
 MultipartFile: 

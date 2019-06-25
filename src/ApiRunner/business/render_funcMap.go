@@ -13,8 +13,13 @@ func world() string {
 	return `world`
 }
 
+func gen_email() string {
+	return `test@qq1.com`
+}
+
 //导入自定义函数
 func init() {
 	//导入
 	funcMap[`world`] = world
+	funcMap[`gen_email`] = gen_email
 }

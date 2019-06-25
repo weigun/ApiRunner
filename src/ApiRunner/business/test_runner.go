@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"ApiRunner/models"
 	"ApiRunner/services"
 	"ApiRunner/utils"
@@ -87,6 +89,7 @@ func execute(r *TestRunner) {
 			return
 		}
 		caseObj.Config = caseConf
+		spew.Dump(caseObj)
 		for _, api := range caseObj.APIS {
 			if r.Status == Cancel {
 				// 如果runner的已经取消了，就没必要再去执行下一个用例了

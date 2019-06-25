@@ -25,7 +25,7 @@ func ParseTestCase(filePath string) (caseObj models.ICaseObj) {
 		return
 	}
 	caseObj = toObj(caseMap, filepath.Ext(filePath))
-	spew.Dump(caseObj)
+	spew.Dump(filePath)
 	return
 }
 

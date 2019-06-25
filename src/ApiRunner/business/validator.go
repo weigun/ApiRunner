@@ -55,14 +55,15 @@ func HaveLength(actual interface{}, expected ...interface{}) bool {
 }
 
 func So(actual interface{}, assert assertion, expected ...interface{}) bool {
-	isok, result := assertLib.So(actual, assert, expected...)
-	if !isok {
-		log.Println(`So failed.result is `, result)
-	}
+	isok := assert(actual, expected...)
+	// isok, result := assertLib.So(actual, assert, expected...)
+	// if !isok {
+	// 	log.Println(`So failed.result is `, result)
+	// }
 	return isok
 }
 
-var assertMap = map[string]assert{
+var assertMap = map[string]assertion{
 	`eq`:    Equal,
 	`equal`: Equal,
 	`gt`:    GreaterThan,
@@ -74,8 +75,9 @@ var assertMap = map[string]assert{
 }
 
 func getAssertByOp(op string) assertion {
-	if ok, assertFun := assertMap[op]; ok {
-		return assertFun
+	if _, ok := assertMap[op]; !ok {
+		log.Panicln(`unknow assertion:`, op)
 	}
-	log.Panicln(`unknow assertion:`, op)
+	return assertMap[op]
+
 }

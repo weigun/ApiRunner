@@ -40,7 +40,7 @@ func newCache() {
 	once.Do(func() {
 		//TODO 配置化
 		client := redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
+			Addr:     "192.168.128.134:6379",
 			Password: os.Getenv("GATE"),
 			DB:       0,
 		})

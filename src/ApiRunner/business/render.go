@@ -61,12 +61,12 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{}) error {
 	objStr := r.render(source, renderVars)
 	switch modelPtr.(type) {
-	case models.CaseConfig:
-		return json.Unmarshal(objStr, modelPtr.(models.CaseConfig))
-	case models.ICaseObj:
-		return json.Unmarshal(objStr, modelPtr.(models.ICaseObj))
-	case models.Params:
-		return json.Unmarshal(objStr, modelPtr.(models.Params))
+	case *models.CaseConfig:
+		return json.Unmarshal(objStr, modelPtr.(*models.CaseConfig))
+	case *models.ICaseObj:
+		return json.Unmarshal(objStr, modelPtr.(*models.ICaseObj))
+	case *models.Params:
+		return json.Unmarshal(objStr, modelPtr.(*models.Params))
 	default:
 		log.Fatalln(fmt.Sprintf(`unknow model %T`, modelPtr))
 	}

@@ -87,6 +87,7 @@ func execute(r *TestRunner) {
 	_type := caseObj.GetType()
 	if _type == models.TYPE_TESTCASE {
 		caseObj := r.CaseObj.(*models.TestCase)
+		spew.Dump(caseObj)
 		//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
 		//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
 		var caseConf models.CaseConfig
@@ -100,13 +101,23 @@ func execute(r *TestRunner) {
 		for varName, varVal := range caseConf.Variables {
 			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
 		}
-		spew.Dump(caseObj)
 		for _, api := range caseObj.APIS {
 			if r.Status == Cancel {
 				// 如果runner的已经取消了，就没必要再去执行下一个用例了
 				log.Println(`executor stopping,because runner is canceled `)
 				return
 			}
+			//将接口的局部变量同步到变量服务
+			var localVars models.Variables
+			err := render.renderObj(utils.Map2Json(api.Variables), true, &localVars)
+			if err != nil {
+				log.Println(`renderObj error:`, err.Error())
+			}
+			api.Variables = localVars
+			for varName, varVal := range api.Variables {
+				services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+			}
+
 			url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
 			// TODO:
 			// 模板翻译

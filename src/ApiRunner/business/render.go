@@ -68,6 +68,8 @@ func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{
 		return json.Unmarshal(objStr, modelPtr.(*models.ICaseObj))
 	case *models.Params:
 		return json.Unmarshal(objStr, modelPtr.(*models.Params))
+	case *models.Variables:
+		return json.Unmarshal(objStr, modelPtr.(*models.Variables))
 	default:
 		log.Fatalln(fmt.Sprintf(`unknow model %T`, modelPtr))
 	}

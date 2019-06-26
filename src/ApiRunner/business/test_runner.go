@@ -83,13 +83,131 @@ func execute(r *TestRunner) {
 
 	//顺序执行用例
 	render := newRenderer(r.ID)
-	requestor := NewRequestor()
+	// requestor := NewRequestor()
 	_type := caseObj.GetType()
 	if _type == models.TYPE_TESTCASE {
 		caseObj := r.CaseObj.(*models.TestCase)
+		executeTestCase(render, caseObj)
+		/*
+			caseObj := r.CaseObj.(*models.TestCase)
+			spew.Dump(caseObj)
+			//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
+			//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
+			var caseConf models.CaseConfig
+			err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
+			if err != nil {
+				log.Println(`renderObj error:`, err.Error())
+				return
+			}
+			caseObj.Config = caseConf
+			//将全局变量同步到变量服务
+			for varName, varVal := range caseConf.Variables {
+				services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+			}
+			for _, api := range caseObj.APIS {
+				if r.Status == Cancel {
+					// 如果runner的已经取消了，就没必要再去执行下一个用例了
+					log.Println(`executor stopping,because runner is canceled `)
+					return
+				}
+				//将接口的局部变量同步到变量服务
+				var localVars models.Variables
+				err := render.renderObj(utils.Map2Json(api.Variables), true, &localVars)
+				if err != nil {
+					log.Println(`renderObj error:`, err.Error())
+				}
+				api.Variables = localVars
+				for varName, varVal := range api.Variables {
+					services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+				}
+
+				url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
+				// TODO:
+				// 模板翻译
+				// 拦截器
+				// MultipartFile
+				/*
+				 Config: (main.CaseConfig) {
+				     Name: (string) (len=6) "signup",
+				     Host: (string) (len=9) "$base_url",
+				     Variables: (map[string]interface {}) (len=2) {
+				      (string) (len=8) "base_url": (string) (len=22) "http://game.ixbow.com/",
+				      (string) (len=7) "g_email": (string) (len=14) "${gen_email()}"
+				     }
+				    },
+				    APIS: ([]main.API) (len=1 cap=1) {
+				     (main.API) {
+				      Name: (string) (len=12) "email-normal",
+				      Variables: (map[string]interface {}) (len=3) {
+				       (string) (len=5) "email": (string) (len=8) "$g_email",
+				       (string) (len=8) "password": (string) (len=6) "111111",
+				       (string) (len=21) "password_confirmation": (string) (len=6) "111111"
+				      },
+				      Path: (string) (len=11) "/api/signup",
+				      Method: (string) (len=4) "POST",
+				      Headers: (map[string]interface {}) (len=2) {
+				       (string) (len=13) "Authorization": (string) "",
+				       (string) (len=12) "Content-Type": (string) (len=16) "application/json"
+				      },
+				      Params: (map[string]interface {}) (len=3) {
+				       (string) (len=5) "email": (string) (len=6) "$email",
+				       (string) (len=8) "password": (string) (len=9) "$password",
+				       (string) (len=21) "password_confirmation": (string) (len=22) "$password_confirmation"
+				      },
+				      Export: (map[string]interface {}) <nil>,
+				      MultipartFile: (main.MultipartFile) {
+				       Params: (map[string]interface {}) <nil>,
+				       Files: (map[string]interface {}) <nil>
+				      },
+				*--------/
+				var params models.Params
+				render.renderObj(toJson(api.Params), true, &params)
+				req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params)
+				// add header
+				for k, v := range api.Headers {
+					req.Header.Add(k, render.renderValue(v.(string), true))
+				}
+				resp := requestor.doRequest(req)
+				//导出变量，如token等
+				if resp.ErrMsg == `` {
+					//没有错误的时候才能导出变量
+					//TODO assert code??
+					for ek, ev := range api.Export {
+						v := ev.(string)
+						if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
+							//返回json则需要提取变量
+							contentMap := utils.Json2Map([]byte(resp.Content))
+							data := make(map[string]map[string]interface{})
+							data[`body`] = contentMap
+							bindVal := render.renderWithData(v, data)
+							services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
+							log.Println("add ExportVars:", render.tag, ek, bindVal)
+						} else {
+							//plain text
+							regx := regexp.MustCompile(v)
+							match := regx.FindStringSubmatch(resp.Content)
+							if match != nil {
+								//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
+								services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
+								// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
+								log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
+							}
+						}
+					}
+				}
+
+				//比较结果
+				for _, validator := range api.Validate {
+					compare := getAssertByOp(validator.Op)
+					isPassed := So(validator.Actual, compare, validator.Expected)
+					log.Printf(`Actual:%v,Expected:%v,So %v`, validator.Actual, validator.Expected, isPassed)
+				}
+
+			}
+		*/
+	} else {
+		caseObj := r.CaseObj.(*models.TestSuites)
 		spew.Dump(caseObj)
-		//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
-		//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
 		var caseConf models.CaseConfig
 		err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
 		if err != nil {
@@ -101,105 +219,128 @@ func execute(r *TestRunner) {
 		for varName, varVal := range caseConf.Variables {
 			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
 		}
-		for _, api := range caseObj.APIS {
-			if r.Status == Cancel {
-				// 如果runner的已经取消了，就没必要再去执行下一个用例了
-				log.Println(`executor stopping,because runner is canceled `)
-				return
+		for _, caseItem := range caseObj.CaseList {
+			for caseName, ts := range caseItem {
+				executeTestCase(render, ts)
 			}
-			//将接口的局部变量同步到变量服务
-			var localVars models.Variables
-			err := render.renderObj(utils.Map2Json(api.Variables), true, &localVars)
-			if err != nil {
-				log.Println(`renderObj error:`, err.Error())
-			}
-			api.Variables = localVars
-			for varName, varVal := range api.Variables {
-				services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
-			}
+		}
+	}
+}
 
-			url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
-			// TODO:
-			// 模板翻译
-			// 拦截器
-			// MultipartFile
-			/*
-			 Config: (main.CaseConfig) {
-			     Name: (string) (len=6) "signup",
-			     Host: (string) (len=9) "$base_url",
-			     Variables: (map[string]interface {}) (len=2) {
-			      (string) (len=8) "base_url": (string) (len=22) "http://game.ixbow.com/",
-			      (string) (len=7) "g_email": (string) (len=14) "${gen_email()}"
-			     }
-			    },
-			    APIS: ([]main.API) (len=1 cap=1) {
-			     (main.API) {
-			      Name: (string) (len=12) "email-normal",
-			      Variables: (map[string]interface {}) (len=3) {
-			       (string) (len=5) "email": (string) (len=8) "$g_email",
-			       (string) (len=8) "password": (string) (len=6) "111111",
-			       (string) (len=21) "password_confirmation": (string) (len=6) "111111"
-			      },
-			      Path: (string) (len=11) "/api/signup",
-			      Method: (string) (len=4) "POST",
-			      Headers: (map[string]interface {}) (len=2) {
-			       (string) (len=13) "Authorization": (string) "",
-			       (string) (len=12) "Content-Type": (string) (len=16) "application/json"
-			      },
-			      Params: (map[string]interface {}) (len=3) {
-			       (string) (len=5) "email": (string) (len=6) "$email",
-			       (string) (len=8) "password": (string) (len=9) "$password",
-			       (string) (len=21) "password_confirmation": (string) (len=22) "$password_confirmation"
-			      },
-			      Export: (map[string]interface {}) <nil>,
-			      MultipartFile: (main.MultipartFile) {
-			       Params: (map[string]interface {}) <nil>,
-			       Files: (map[string]interface {}) <nil>
-			      },
-			*/
-			var params models.Params
-			render.renderObj(toJson(api.Params), true, &params)
-			req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params)
-			// add header
-			for k, v := range api.Headers {
-				req.Header.Add(k, render.renderValue(v.(string), true))
-			}
-			resp := requestor.doRequest(req)
-			//导出变量，如token等
-			if resp.ErrMsg == `` {
-				//没有错误的时候才能导出变量
-				//TODO assert code??
-				for ek, ev := range api.Export {
-					v := ev.(string)
-					if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
-						//返回json则需要提取变量
-						contentMap := utils.Json2Map([]byte(resp.Content))
-						data := make(map[string]map[string]interface{})
-						data[`body`] = contentMap
-						bindVal := render.renderWithData(v, data)
-						services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
-						log.Println("add ExportVars:", render.tag, ek, bindVal)
-					} else {
-						//plain text
-						regx := regexp.MustCompile(v)
-						match := regx.FindStringSubmatch(resp.Content)
-						if match != nil {
-							//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
-							services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
-							// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
-							log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
-						}
+func executeTestCase(render *renderer, caseObj models.TestCase) {
+	spew.Dump(caseObj)
+	requestor := NewRequestor()
+	//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
+	//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
+	var caseConf models.CaseConfig
+	err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
+	if err != nil {
+		log.Println(`renderObj error:`, err.Error())
+		return
+	}
+	caseObj.Config = caseConf
+	//将全局变量同步到变量服务
+	for varName, varVal := range caseConf.Variables {
+		services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+	}
+	for _, api := range caseObj.APIS {
+		if r.Status == Cancel {
+			// 如果runner的已经取消了，就没必要再去执行下一个用例了
+			log.Println(`executor stopping,because runner is canceled `)
+			return
+		}
+		//将接口的局部变量同步到变量服务
+		var localVars models.Variables
+		err := render.renderObj(utils.Map2Json(api.Variables), true, &localVars)
+		if err != nil {
+			log.Println(`renderObj error:`, err.Error())
+		}
+		api.Variables = localVars
+		for varName, varVal := range api.Variables {
+			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+		}
+
+		url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
+		// TODO:
+		// 模板翻译
+		// 拦截器
+		// MultipartFile
+		/*
+		 Config: (main.CaseConfig) {
+		     Name: (string) (len=6) "signup",
+		     Host: (string) (len=9) "$base_url",
+		     Variables: (map[string]interface {}) (len=2) {
+		      (string) (len=8) "base_url": (string) (len=22) "http://game.ixbow.com/",
+		      (string) (len=7) "g_email": (string) (len=14) "${gen_email()}"
+		     }
+		    },
+		    APIS: ([]main.API) (len=1 cap=1) {
+		     (main.API) {
+		      Name: (string) (len=12) "email-normal",
+		      Variables: (map[string]interface {}) (len=3) {
+		       (string) (len=5) "email": (string) (len=8) "$g_email",
+		       (string) (len=8) "password": (string) (len=6) "111111",
+		       (string) (len=21) "password_confirmation": (string) (len=6) "111111"
+		      },
+		      Path: (string) (len=11) "/api/signup",
+		      Method: (string) (len=4) "POST",
+		      Headers: (map[string]interface {}) (len=2) {
+		       (string) (len=13) "Authorization": (string) "",
+		       (string) (len=12) "Content-Type": (string) (len=16) "application/json"
+		      },
+		      Params: (map[string]interface {}) (len=3) {
+		       (string) (len=5) "email": (string) (len=6) "$email",
+		       (string) (len=8) "password": (string) (len=9) "$password",
+		       (string) (len=21) "password_confirmation": (string) (len=22) "$password_confirmation"
+		      },
+		      Export: (map[string]interface {}) <nil>,
+		      MultipartFile: (main.MultipartFile) {
+		       Params: (map[string]interface {}) <nil>,
+		       Files: (map[string]interface {}) <nil>
+		      },
+		*/
+		var params models.Params
+		render.renderObj(toJson(api.Params), true, &params)
+		req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params)
+		// add header
+		for k, v := range api.Headers {
+			req.Header.Add(k, render.renderValue(v.(string), true))
+		}
+		resp := requestor.doRequest(req)
+		//导出变量，如token等
+		if resp.ErrMsg == `` {
+			//没有错误的时候才能导出变量
+			//TODO assert code??
+			for ek, ev := range api.Export {
+				v := ev.(string)
+				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
+					//返回json则需要提取变量
+					contentMap := utils.Json2Map([]byte(resp.Content))
+					data := make(map[string]map[string]interface{})
+					data[`body`] = contentMap
+					bindVal := render.renderWithData(v, data)
+					services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
+					log.Println("add ExportVars:", render.tag, ek, bindVal)
+				} else {
+					//plain text
+					regx := regexp.MustCompile(v)
+					match := regx.FindStringSubmatch(resp.Content)
+					if match != nil {
+						//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
+						services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
+						// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
+						log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
 					}
 				}
 			}
-
-			//比较结果
-			for _, validator := range api.Validate {
-				compare := getAssertByOp(validator.Op)
-				isPassed := So(validator.Actual, compare, validator.Expected)
-				log.Printf(`Actual:%v,Expected:%v,So %v`, validator.Actual, validator.Expected, isPassed)
-			}
-
 		}
+
+		//比较结果
+		for _, validator := range api.Validate {
+			compare := getAssertByOp(validator.Op)
+			isPassed := So(validator.Actual, compare, validator.Expected)
+			log.Printf(`Actual:%v,Expected:%v,So %v`, validator.Actual, validator.Expected, isPassed)
+		}
+
 	}
 }

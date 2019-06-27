@@ -12,6 +12,7 @@ import (
 	"log"
 	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/json-iterator/go"
 )
 
@@ -45,14 +46,24 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 			}
 			//从变量服务中取出需要的变量
 			//TODO 如果没有找到变量，则懒加载？
+			log.Println(r.tag)
 			m := services.VarsMgr.GetByGroup(r.tag)
 			varsMap := make(map[string]map[string]string)
 			varsMap[r.tag] = m
+			spew.Dump(varsMap)
 			tmpl.Execute(wr, varsMap)
 		} else {
+			tmpl, err := tmpl.Parse(source)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
 			tmpl.Execute(wr, nil)
 		}
 	} else {
+		tmpl, err := tmpl.Parse(source)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
 		tmpl.Execute(wr, nil)
 	}
 	return wr.Bytes()
@@ -66,10 +77,12 @@ func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{
 		return json.Unmarshal(objStr, modelPtr.(*models.CaseConfig))
 	case *models.ICaseObj:
 		return json.Unmarshal(objStr, modelPtr.(*models.ICaseObj))
-	case *models.Params:
-		return json.Unmarshal(objStr, modelPtr.(*models.Params))
-	case *models.Variables:
-		return json.Unmarshal(objStr, modelPtr.(*models.Variables))
+	// case *models.Params:
+	// return json.Unmarshal(objStr, modelPtr.(*models.Params))
+	// case *models.Variables:
+	case *map[string]interface{}:
+		log.Println(`----------`, string(objStr))
+		return json.Unmarshal(objStr, modelPtr.(*map[string]interface{}))
 	default:
 		log.Fatalln(fmt.Sprintf(`unknow model %T`, modelPtr))
 	}

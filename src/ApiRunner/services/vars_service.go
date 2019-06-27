@@ -55,8 +55,8 @@ func (vm *VarsManager) GetByGroup(groupKey string) map[string]string {
 	m := make(map[string]string)
 	splitChar := `:`
 	for _, k := range vm.cache.Keys(fmt.Sprintf(`%s*`, key)) {
-		_k := strings.Split(k, splitChar)[strings.Count(k, splitChar)+1]
-		m[_k] = vm.cache.Get(_k)
+		_k := strings.Split(k, splitChar)[strings.Count(k, splitChar)]
+		m[_k] = vm.cache.Get(fmt.Sprintf(`%s:%s`, key, _k))
 	}
 	return m
 }

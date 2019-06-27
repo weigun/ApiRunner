@@ -87,7 +87,7 @@ func execute(r *TestRunner) {
 	_type := caseObj.GetType()
 	if _type == models.TYPE_TESTCASE {
 		caseObj := r.CaseObj.(*models.TestCase)
-		executeTestCase(render, caseObj)
+		executeTestCase(render, caseObj, r)
 		/*
 			caseObj := r.CaseObj.(*models.TestCase)
 			spew.Dump(caseObj)
@@ -221,18 +221,20 @@ func execute(r *TestRunner) {
 		}
 		for _, caseItem := range caseObj.CaseList {
 			for caseName, ts := range caseItem {
-				executeTestCase(render, ts)
+				log.Println(`executeTestCase:`, caseName)
+				executeTestCase(render, &ts, r)
 			}
 		}
 	}
 }
 
-func executeTestCase(render *renderer, caseObj models.TestCase) {
+func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) {
 	spew.Dump(caseObj)
 	requestor := NewRequestor()
 	//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
 	//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
 	var caseConf models.CaseConfig
+	log.Println(`render config`)
 	err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
 	if err != nil {
 		log.Println(`renderObj error:`, err.Error())
@@ -250,10 +252,11 @@ func executeTestCase(render *renderer, caseObj models.TestCase) {
 			return
 		}
 		//将接口的局部变量同步到变量服务
+		log.Println(`render Variables`)
 		var localVars models.Variables
 		err := render.renderObj(utils.Map2Json(api.Variables), true, &localVars)
 		if err != nil {
-			log.Println(`renderObj error:`, err.Error())
+			log.Println(`renderObj Variables error:`, err.Error())
 		}
 		api.Variables = localVars
 		for varName, varVal := range api.Variables {
@@ -307,6 +310,7 @@ func executeTestCase(render *renderer, caseObj models.TestCase) {
 			req.Header.Add(k, render.renderValue(v.(string), true))
 		}
 		resp := requestor.doRequest(req)
+		log.Println(resp)
 		//导出变量，如token等
 		if resp.ErrMsg == `` {
 			//没有错误的时候才能导出变量

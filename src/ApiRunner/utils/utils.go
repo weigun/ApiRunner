@@ -2,14 +2,18 @@ package utils
 
 import (
 	// "bytes"
-	"encoding/json"
+	// "encoding/json"
 	// "io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func Map2Json(m map[string]interface{}) string {
 	jsonStr, err := json.Marshal(m)

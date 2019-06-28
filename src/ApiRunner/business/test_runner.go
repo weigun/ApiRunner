@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 
 	"ApiRunner/models"
 	"ApiRunner/services"
@@ -207,7 +207,7 @@ func execute(r *TestRunner) {
 		*/
 	} else {
 		caseObj := r.CaseObj.(*models.TestSuites)
-		spew.Dump(caseObj)
+		// spew.Dump(caseObj)
 		var caseConf models.CaseConfig
 		err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
 		if err != nil {
@@ -229,7 +229,7 @@ func execute(r *TestRunner) {
 }
 
 func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) {
-	spew.Dump(caseObj)
+	// spew.Dump(caseObj)
 	requestor := NewRequestor()
 	//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
 	//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})

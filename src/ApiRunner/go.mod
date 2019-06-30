@@ -35,6 +35,7 @@ require (
 	github.com/ryanuber/columnize v2.1.0+incompatible // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/smartystreets/assertions v1.0.0
+	github.com/zach-klippenstein/goregen v0.0.0-20160303162051-795b5e3961ea
 	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	gopkg.in/yaml.v3 v3.0.0-20190502103701-55513cacd4ae

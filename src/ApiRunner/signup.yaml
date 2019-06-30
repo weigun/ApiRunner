@@ -1,0 +1,28 @@
+name: sign up
+variables:
+  email: 111@qq.com
+  password: "111111"
+  password_confirmation: "111111"
+path: /api/signup
+method: POST
+headers:
+  Content-Type: "application/json"
+  Authorization: ""
+params:
+  email: "{{$email}}"
+  password: "{{$password}}"
+  password_confirmation: "{{$password_confirmation}}"
+Export: 
+  token: "{{.body.token}}"
+MultipartFile: 
+  params: 
+    filedkey1: 10
+    filedkey2: "go"
+  files: 
+    key1: test.go
+    key2: main.go
+
+validate:
+  - op: eq
+    actual: "{{.StatusCode}}"
+    expected: 200

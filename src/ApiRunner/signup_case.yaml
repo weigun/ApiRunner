@@ -1,0 +1,21 @@
+config:
+  name: "signup"
+  host: "{{$base_url}}"
+  variables:
+    g_email: "{{gen_email}}"
+    base_url: http://depay.ixbow.com/
+apis:
+  - name: email-normal
+    api: signup.yaml
+    variables:
+        email: "{{$g_email}}"
+    validate:
+      - op: eq
+        actual: "{{.body.msg}}"
+        expected: ok
+      - op: eq
+        actual: "{{.body.token}}"
+        expected: asdasdasdas
+      - op: eq
+        actual: "{{.body.code}}"
+        expected: 0

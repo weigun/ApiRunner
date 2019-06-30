@@ -194,12 +194,12 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		}
 		resp := requestor.doRequest(req)
 		log.Println(resp)
+		data := make(map[string]interface{})
+		data[`StatusCode`] = resp.Code
 		//导出变量，如token等
 		if resp.ErrMsg == `` {
 			//没有错误的时候才能导出变量
 			//TODO assert code??
-			data := make(map[string]interface{})
-			data[`StatusCode`] = resp.Code
 			for ek, ev := range api.Export {
 				v := ev.(string)
 				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
@@ -225,8 +225,9 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 
 		//比较结果
 		for _, validator := range api.Validate {
+			// TODO 渲染变量时，适配各种数据类型
 			compare := getAssertByOp(validator.Op)
-			actual := render.renderValue(validator.Actual, true)
+			actual := render.renderWithData(validator.Actual.(string), data)
 			isPassed := So(actual, compare, validator.Expected)
 			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, validator.Expected, isPassed)
 		}

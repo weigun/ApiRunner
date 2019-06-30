@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httptrace"
 	Url "net/url"
 
 	// "strings"
@@ -22,6 +23,9 @@ const (
 	TIMEOUT          = 60
 	MAX_CONNEECTIONS = 100 //连接池数
 )
+
+type RefReq = *http.Request
+type RefRsp = *http.Response
 
 var client *http.Client
 var once sync.Once
@@ -67,6 +71,28 @@ func (this *requests) doRequest(request *http.Request) *Response {
 	//执行请求
 	// log.Println("-------before request:", request)
 	resp := Response{}
+	//hook test
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			log.Println("Got Conn")
+		},
+		ConnectStart: func(network, addr string) {
+			log.Println("Dial start")
+		},
+		ConnectDone: func(network, addr string, err error) {
+			log.Println("Dial done")
+		},
+		GotFirstResponseByte: func() {
+			log.Println("First response byte!")
+		},
+		WroteHeaders: func() {
+			log.Println("Wrote headers")
+		},
+		WroteRequest: func(wr httptrace.WroteRequestInfo) {
+			log.Println("Wrote request", wr)
+		},
+	}
+	request = request.WithContext(httptrace.WithClientTrace(request.Context(), trace))
 	response, err := this.client.Do(request)
 	if err != nil {
 		resp.ErrMsg = err.Error()

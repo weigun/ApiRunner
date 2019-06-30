@@ -20,6 +20,8 @@ type API struct {
 	Export        Variables     `json:"export"  yaml:"export" toml:"export"`
 	MultipartFile MultipartFile `json:"multifiles,omitempty"   yaml:"multifiles" toml:"multifiles"`
 	Validate      []Validator   `json:"validate"  yaml:"validate" toml:"validate"`
+	BeforeRequest string        `json:"beforeRequest"  yaml:"beforeRequest" toml:"beforeRequest"`
+	AfterResponse string        `json:"afterResponse"  yaml:"afterResponse" toml:"afterResponse"`
 }
 
 func (api *API) GetName() string {

@@ -19,3 +19,7 @@ apis:
       - op: eq
         actual: "{{.body.code}}"
         expected: 0
+    beforeRequest: beforeRequest
+    afterResponse: afterResponse
+        
+    

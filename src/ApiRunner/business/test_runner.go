@@ -186,19 +186,12 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		      },
 		*/
 		var params models.Params
+		var header models.Header
 		render.renderObj(toJson(api.Params), true, &params)
-		req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params)
-		// add header
-		for k, v := range api.Headers {
-			req.Header.Add(k, render.renderValue(v.(string), true))
-		}
-		if api.BeforeRequest != `` {
-			req = hookMap[api.BeforeRequest](req).(RefReq)
-		}
+		render.renderObj(toJson(api.Headers), true, &header)
+		buildRequest := hook
+		req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
 		resp := requestor.doRequest(req)
-		// if api.AfterResponse != `` {
-		// 	resp := hookMap[api.AfterResponse](resp).(RefRsp)
-		// }
 		log.Println(resp)
 		data := make(map[string]interface{})
 		data[`StatusCode`] = resp.Code

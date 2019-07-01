@@ -8,10 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httptrace"
 	Url "net/url"
-
-	// "strings"
 	"sync"
 	"time"
 
@@ -26,6 +23,10 @@ const (
 
 type RefReq = *http.Request
 type RefRsp = *http.Response
+
+type IRequest interface {
+	doRequest(request *http.Request) *Response
+}
 
 var client *http.Client
 var once sync.Once
@@ -58,12 +59,12 @@ func NewRequestor() *requests {
 }
 
 func (this *requests) Get(url string, params models.Params) *Response {
-	request := this.BuildRequest(url, "GET", params)
+	request := this.BuildRequest(url, "GET", params, nil)
 	return this.doRequest(request)
 }
 
 func (this *requests) Post(url string, params models.Params) *Response {
-	request := this.BuildRequest(url, "POST", params)
+	request := this.BuildRequest(url, "POST", params, nil)
 	return this.doRequest(request)
 }
 
@@ -71,28 +72,7 @@ func (this *requests) doRequest(request *http.Request) *Response {
 	//执行请求
 	// log.Println("-------before request:", request)
 	resp := Response{}
-	//hook test
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			log.Println("Got Conn")
-		},
-		ConnectStart: func(network, addr string) {
-			log.Println("Dial start")
-		},
-		ConnectDone: func(network, addr string, err error) {
-			log.Println("Dial done")
-		},
-		GotFirstResponseByte: func() {
-			log.Println("First response byte!")
-		},
-		WroteHeaders: func() {
-			log.Println("Wrote headers")
-		},
-		WroteRequest: func(wr httptrace.WroteRequestInfo) {
-			log.Println("Wrote request", wr)
-		},
-	}
-	request = request.WithContext(httptrace.WithClientTrace(request.Context(), trace))
+	//beforeRequest hook
 	response, err := this.client.Do(request)
 	if err != nil {
 		resp.ErrMsg = err.Error()
@@ -115,7 +95,7 @@ func (this *requests) doRequest(request *http.Request) *Response {
 	return &resp
 }
 
-func (this *requests) BuildRequest(url, method string, params models.Params) *http.Request {
+func (this *requests) BuildRequest(url, method string, params models.Params, header models.Header) *http.Request {
 	//构造请求体
 	// TODO 加上文件上传
 	log.Println("BuildRequest:", params)
@@ -134,7 +114,10 @@ func (this *requests) BuildRequest(url, method string, params models.Params) *ht
 	if method == `GET` {
 		req.URL.RawQuery = data
 	}
-	//TODO add header
+	// add header
+	for k, v := range header {
+		req.Header.Add(k, v.(string))
+	}
 	return req
 }
 

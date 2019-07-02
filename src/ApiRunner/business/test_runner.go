@@ -153,17 +153,20 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		// MultipartFile
 
 		//MultipartFile比普通post请求优先级要高
-		var params models.Params
 		var header models.Header
 		var resp *Response
+
 		render.renderObj(toJson(api.Headers), true, &header)
 		if api.MultipartFile.IsEnabled() {
-			render.renderObj(toJson(api.MultipartFile.Params), true, &params)
-			req := requestor.BuildPostFiles(url)
+			var mpf models.MultipartFile
+			render.renderObj(api.MultipartFile.Json(), true, &mpf)
+			req := requestor.BuildPostFiles(url, mpf, header)
+			resp = requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		} else {
+			var params models.Params
 			render.renderObj(toJson(api.Params), true, &params)
 			req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
-			resp := requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
+			resp = requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		}
 		log.Println(resp)
 		data := make(map[string]interface{})

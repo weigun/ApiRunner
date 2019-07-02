@@ -19,8 +19,8 @@ MultipartFile:
     filedkey1: 10
     filedkey2: "go"
   files: 
-    key1: test.go
-    key2: main.go
+    signup: signup.yaml
+    main: main.go
 
 validate:
   - op: eq

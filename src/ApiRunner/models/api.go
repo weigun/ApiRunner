@@ -36,6 +36,7 @@ func (api *API) Json() string {
 	}
 	return string(jsonStr)
 }
+
 func (api *API) GetType() int {
 	return TYPE_API
 }
@@ -67,4 +68,13 @@ type MultipartFile struct {
 
 func (mf *MultipartFile) IsEnabled() bool {
 	return len(mf.Params) > 0 || len(mf.Files) > 0
+}
+
+func (mf *MultipartFile) Json() string {
+	jsonStr, err := json.Marshal(mf)
+	if err != nil {
+		fmt.Println(`MultipartFile to json failed:`, err.Error())
+		return `{}`
+	}
+	return string(jsonStr)
 }

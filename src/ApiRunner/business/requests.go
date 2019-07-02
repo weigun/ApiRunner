@@ -141,14 +141,13 @@ func (this *requests) BuildRequest(url, method string, params models.Params, hea
 	return req
 }
 
-func (this *requests) BuildPostFiles(url, mpf models.MultipartFile, header models.Header) *http.Request {
+func (this *requests) BuildPostFiles(url string, mpf models.MultipartFile, header models.Header) *http.Request {
 	//构造文件上传的请求体
 	log.Println("BuildPostFiles:", mpf)
 	bodyBuf := bytes.NewBufferString(``)
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	// boundary默认会提供一组随机数，也可以自己设置。
 	bodyWriter.SetBoundary("75FE3EACA32442E1522CE5C98C6DC891")
-	boundary := bodyWriter.Boundary()
 
 	//数据域
 	for k, v := range mpf.Params {
@@ -189,6 +188,7 @@ func (this *requests) BuildPostFiles(url, mpf models.MultipartFile, header model
 	// req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 	req.ContentLength = int64(bodyBuf.Len())
 	log.Printf("request len:", req.ContentLength)
+	return req
 }
 
 func encode(params models.Params) string {

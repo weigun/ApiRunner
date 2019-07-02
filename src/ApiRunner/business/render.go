@@ -83,6 +83,8 @@ func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{
 	case *map[string]interface{}:
 		log.Println(`----------`, string(objStr))
 		return json.Unmarshal(objStr, modelPtr.(*map[string]interface{}))
+	case *models.MultipartFile:
+		return json.Unmarshal(objStr, modelPtr.(*models.MultipartFile))
 	default:
 		log.Fatalln(fmt.Sprintf(`unknow model %T`, modelPtr))
 	}

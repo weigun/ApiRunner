@@ -151,46 +151,20 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		// 模板翻译-done
 		// 拦截器-done
 		// MultipartFile
-		/*
-		 Config: (main.CaseConfig) {
-		     Name: (string) (len=6) "signup",
-		     Host: (string) (len=9) "$base_url",
-		     Variables: (map[string]interface {}) (len=2) {
-		      (string) (len=8) "base_url": (string) (len=22) "http://game.ixbow.com/",
-		      (string) (len=7) "g_email": (string) (len=14) "${gen_email()}"
-		     }
-		    },
-		    APIS: ([]main.API) (len=1 cap=1) {
-		     (main.API) {
-		      Name: (string) (len=12) "email-normal",
-		      Variables: (map[string]interface {}) (len=3) {
-		       (string) (len=5) "email": (string) (len=8) "$g_email",
-		       (string) (len=8) "password": (string) (len=6) "111111",
-		       (string) (len=21) "password_confirmation": (string) (len=6) "111111"
-		      },
-		      Path: (string) (len=11) "/api/signup",
-		      Method: (string) (len=4) "POST",
-		      Headers: (map[string]interface {}) (len=2) {
-		       (string) (len=13) "Authorization": (string) "",
-		       (string) (len=12) "Content-Type": (string) (len=16) "application/json"
-		      },
-		      Params: (map[string]interface {}) (len=3) {
-		       (string) (len=5) "email": (string) (len=6) "$email",
-		       (string) (len=8) "password": (string) (len=9) "$password",
-		       (string) (len=21) "password_confirmation": (string) (len=22) "$password_confirmation"
-		      },
-		      Export: (map[string]interface {}) <nil>,
-		      MultipartFile: (main.MultipartFile) {
-		       Params: (map[string]interface {}) <nil>,
-		       Files: (map[string]interface {}) <nil>
-		      },
-		*/
+
+		//MultipartFile比普通post请求优先级要高
 		var params models.Params
 		var header models.Header
-		render.renderObj(toJson(api.Params), true, &params)
+		var resp *Response
 		render.renderObj(toJson(api.Headers), true, &header)
-		req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
-		resp := requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
+		if api.MultipartFile.IsEnabled() {
+			render.renderObj(toJson(api.MultipartFile.Params), true, &params)
+			req := requestor.BuildPostFiles(url)
+		} else {
+			render.renderObj(toJson(api.Params), true, &params)
+			req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
+			resp := requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
+		}
 		log.Println(resp)
 		data := make(map[string]interface{})
 		data[`StatusCode`] = resp.Code

@@ -64,3 +64,7 @@ type MultipartFile struct {
 	Params Params `json:"params"  yaml:"params" toml:"params"` //上传的数据
 	Files  Params `json:"files"   yaml:"files" toml:"files"`   //文件列表
 }
+
+func (mf *MultipartFile) IsEnabled() bool {
+	return len(mf.Params) > 0 || len(mf.Files) > 0
+}

@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	Url "net/url"
 	"sync"
@@ -138,6 +139,56 @@ func (this *requests) BuildRequest(url, method string, params models.Params, hea
 		req.Header.Add(k, v.(string))
 	}
 	return req
+}
+
+func (this *requests) BuildPostFiles(url, mpf models.MultipartFile, header models.Header) *http.Request {
+	//构造文件上传的请求体
+	log.Println("BuildPostFiles:", mpf)
+	bodyBuf := bytes.NewBufferString(``)
+	bodyWriter := multipart.NewWriter(bodyBuf)
+	// boundary默认会提供一组随机数，也可以自己设置。
+	bodyWriter.SetBoundary("75FE3EACA32442E1522CE5C98C6DC891")
+	boundary := bodyWriter.Boundary()
+
+	//数据域
+	for k, v := range mpf.Params {
+		bodyWriter.WriteField(k, v.(string))
+	}
+
+	//文件域
+	for k, v := range mpf.Files {
+		filePath := v.(string)
+		_, err := bodyWriter.CreateFormFile(k, filePath)
+		if err != nil {
+			log.Panicf("create post file[%s] error,%s", filePath, err.Error())
+		}
+		content, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			log.Panicf("ReadFile [%s] error,%s", filePath, err.Error())
+		}
+		bodyBuf.Write(content)
+
+	}
+	bodyWriter.Close()
+
+	reqReader := io.MultiReader(bodyBuf)
+	req, err := http.NewRequest("POST", url, reqReader)
+	if err != nil {
+		log.Panicf(`BuildPostFiles error %v\n`, err.Error())
+	}
+
+	// add header
+	for k, v := range header {
+		if k == `Content-Type` {
+			req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
+		} else {
+			req.Header.Add(k, v.(string))
+		}
+
+	}
+	// req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
+	req.ContentLength = int64(bodyBuf.Len())
+	log.Printf("request len:", req.ContentLength)
 }
 
 func encode(params models.Params) string {

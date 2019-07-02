@@ -9,13 +9,15 @@ apis:
     api: signup.yaml
     variables:
         email: "{{$g_email}}"
+    Export: 
+      mymail: "{{.body.email}}"
     validate:
       - op: eq
         actual: "{{.body.msg}}"
         expected: ok
       - op: eq
-        actual: "{{.body.token}}"
-        expected: asdasdasdas
+        actual: "{{.body.email}}"
+        expected: "{{$mymail}}"
       - op: eq
         actual: "{{.body.code}}"
         expected: 0

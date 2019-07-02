@@ -12,8 +12,8 @@ params:
   email: "{{$email}}"
   password: "{{$password}}"
   password_confirmation: "{{$password_confirmation}}"
-Export: 
-  token: "{{.body.token}}"
+#Export: 
+#  token: "{{.body.token}}"
 MultipartFile: 
   params: 
     filedkey1: 10

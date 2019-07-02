@@ -12,7 +12,7 @@ import (
 	"log"
 	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	"github.com/json-iterator/go"
 )
 
@@ -50,7 +50,7 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 			m := services.VarsMgr.GetByGroup(r.tag)
 			varsMap := make(map[string]map[string]string)
 			varsMap[r.tag] = m
-			spew.Dump(varsMap)
+			// spew.Dump(varsMap)
 			tmpl.Execute(wr, varsMap)
 		} else {
 			tmpl, err := tmpl.Parse(source)

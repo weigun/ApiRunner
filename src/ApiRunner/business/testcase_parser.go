@@ -73,31 +73,37 @@ func parseSingleCase(ts map[string]interface{}) {
 				列表和map则进行合并处理
 			*/
 			// key := key.(string)
-			if _, ok := rawApi[key]; ok {
-				//只替换存在的字段
-				log.Println(`merge `, key)
-				switch val.(type) {
-				case int, int8, int16, int32, int64, float32, float64, string, bool:
-					//直接替换
-					rawApi[key] = val
-				case []interface{}:
-					//合并列表
-					itemListPtr := rawApi[key].([]interface{}) // 方便引用
-					for _, ele := range val.([]interface{}) {
-						itemListPtr = append(itemListPtr, ele)
-					}
-					rawApi[key] = itemListPtr
-				case map[string]interface{}:
-					//合并map
-					itemPtr := rawApi[key].(map[string]interface{}) //因为多级map不可寻址，需要先提取整个val出来才能引用
+			// if _, ok := rawApi[key]; ok {
+			//只替换存在的字段
+			log.Println(`merge `, key)
+			switch val.(type) {
+			case int, int8, int16, int32, int64, float32, float64, string, bool:
+				//直接替换
+				rawApi[key] = val
+			case []interface{}:
+				//合并列表
+				itemListPtr := rawApi[key].([]interface{}) // 方便引用
+				for _, ele := range val.([]interface{}) {
+					itemListPtr = append(itemListPtr, ele)
+				}
+				rawApi[key] = itemListPtr
+			case map[string]interface{}:
+				//合并map
+				if rawApi[key] == nil {
+					//api没有定义export
+					rawApi[key] = val.(map[string]interface{})
+				} else {
+					itemPtr := rawApi[key].(map[string]interface{})
 					for k, v := range val.(map[string]interface{}) {
 						itemPtr[k] = v
 					}
 					rawApi[key] = itemPtr //需要回写才能更新
-				default:
-					log.Fatal(fmt.Sprintf(`_parseTestCase,unsupport type in case type:%T,val:%v`, val, val))
 				}
+
+			default:
+				log.Fatal(fmt.Sprintf(`_parseTestCase,unsupport type in case type:%T,val:%v`, val, val))
 			}
+			// }
 		}
 		//处理hook
 		rawApi[`beforeRequest`] = apiItem[`beforeRequest`]

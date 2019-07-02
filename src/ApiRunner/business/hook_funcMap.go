@@ -2,7 +2,7 @@
 package business
 
 import (
-	"fmt"
+	"log"
 	// "net/http"
 	// "github.com/davecgh/go-spew/spew"
 )
@@ -10,13 +10,14 @@ import (
 var hookMap = make(map[string]hookFunc)
 
 func beforeRequest(req interface{}) interface{} {
-	fmt.Println(`hook beforeRequest trigger`)
+	log.Println(`hook beforeRequest trigger`)
 	// spew.Dump(req)
 	return req
 }
 
 func afterResponse(resp interface{}) interface{} {
-	fmt.Println(`hook afterResponse trigger`)
+	log.Println(`hook afterResponse trigger`)
+	log.Println(resp)
 	// spew.Dump(resp)
 	return resp
 }

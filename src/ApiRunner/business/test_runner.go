@@ -149,7 +149,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		url := fmt.Sprintf(`%s/%s`, render.renderValue(caseObj.Config.Host, true), render.renderValue(api.Path, true))
 		// TODO:
 		// 模板翻译-done
-		// 拦截器
+		// 拦截器-done
 		// MultipartFile
 		/*
 		 Config: (main.CaseConfig) {
@@ -226,8 +226,9 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 			// TODO 渲染变量时，适配各种数据类型
 			compare := getAssertByOp(validator.Op)
 			actual := render.renderWithData(validator.Actual.(string), data)
-			isPassed := So(actual, compare, validator.Expected)
-			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, validator.Expected, isPassed)
+			expected := render.renderValue(validator.Expected.(string), true)
+			isPassed := So(actual, compare, expected)
+			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, expected, isPassed)
 		}
 
 	}

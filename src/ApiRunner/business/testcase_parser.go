@@ -99,6 +99,9 @@ func parseSingleCase(ts map[string]interface{}) {
 				}
 			}
 		}
+		//处理hook
+		rawApi[`beforeRequest`] = apiItem[`beforeRequest`]
+		rawApi[`afterResponse`] = apiItem[`afterResponse`]
 		log.Println(`++++++++++++++++++++++++`)
 		spew.Dump(rawApi)
 		log.Println(`++++++++++++++++++++++++`)

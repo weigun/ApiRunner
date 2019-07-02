@@ -1,12 +1,11 @@
 // hook.go
 package business
 
-import (
-	"log"
-	"net/http"
-)
+// "net/http"
+
+type hookFunc func(interface{}) interface{}
 
 type hooks struct {
-	beforeRequest func(*http.Request) *http.Request
-	afterResponse func(*http.Response) *http.Response
+	beforeRequest hookFunc
+	afterResponse hookFunc
 }

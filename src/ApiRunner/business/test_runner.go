@@ -189,9 +189,8 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		var header models.Header
 		render.renderObj(toJson(api.Params), true, &params)
 		render.renderObj(toJson(api.Headers), true, &header)
-		buildRequest := hook
 		req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
-		resp := requestor.doRequest(req)
+		resp := requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		log.Println(resp)
 		data := make(map[string]interface{})
 		data[`StatusCode`] = resp.Code

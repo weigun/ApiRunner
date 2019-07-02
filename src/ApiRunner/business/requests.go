@@ -60,20 +60,39 @@ func NewRequestor() *requests {
 
 func (this *requests) Get(url string, params models.Params) *Response {
 	request := this.BuildRequest(url, "GET", params, nil)
-	return this.doRequest(request)
+	return this.doRequest(request, ``, ``)
 }
 
 func (this *requests) Post(url string, params models.Params) *Response {
 	request := this.BuildRequest(url, "POST", params, nil)
-	return this.doRequest(request)
+	return this.doRequest(request, ``, ``)
 }
 
-func (this *requests) doRequest(request *http.Request) *Response {
+func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespHook string) *Response {
 	//执行请求
 	// log.Println("-------before request:", request)
 	resp := Response{}
 	//beforeRequest hook
+	if beforeReqHook == `` {
+		beforeReqHook = `beforeRequest`
+	} else {
+		if _, ok := hookMap[beforeReqHook]; !ok {
+			log.Printf(`hook not found [%s],use default`, beforeReqHook)
+			beforeReqHook = `beforeRequest`
+		}
+	}
+	if afterRespHook == `` {
+		afterRespHook = `afterResponse`
+	} else {
+		if _, ok := hookMap[afterRespHook]; !ok {
+			log.Printf(`hook not found [%s],use default`, afterRespHook)
+			afterRespHook = `afterResponse`
+		}
+	}
+	hook := hooks{hookMap[beforeReqHook], hookMap[afterRespHook]}
+	request = hook.beforeRequest(request).(*http.Request)
 	response, err := this.client.Do(request)
+	response = hook.afterResponse(response).(*http.Response)
 	if err != nil {
 		resp.ErrMsg = err.Error()
 		if response != nil {

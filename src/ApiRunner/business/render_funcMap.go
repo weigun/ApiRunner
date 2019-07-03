@@ -28,6 +28,7 @@ func gen_email() string {
 	*/
 	myRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randAlphaNum := funcMap[`randAlphaNum`].(func(count int) string)
+	randAlpha := funcMap[`randAlpha`].(func(count int) string)
 	lenght := myRand.Intn(16)
 	if lenght < 4 {
 		lenght = 4
@@ -35,7 +36,7 @@ func gen_email() string {
 	return fmt.Sprintf(`%s@%s.%s`,
 		randAlphaNum(lenght),
 		randAlphaNum(4),
-		randAlphaNum(3))
+		randAlpha(4))
 }
 
 //导入自定义函数

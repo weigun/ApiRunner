@@ -150,7 +150,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		// TODO:
 		// 模板翻译-done
 		// 拦截器-done
-		// MultipartFile
+		// MultipartFile-done
 
 		//MultipartFile比普通post请求优先级要高
 		var header models.Header

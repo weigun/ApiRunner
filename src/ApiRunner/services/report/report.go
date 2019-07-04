@@ -2,8 +2,10 @@
 package report
 
 import (
-	"fmt"
+	// "fmt"
 	"time"
+
+	. "ApiRunner/models"
 )
 
 const (
@@ -15,6 +17,11 @@ const (
 
 type DateTime = time.Time
 
+type Report struct {
+	Summary Summary
+	Details []Detail
+}
+
 type Summary struct {
 	StartAt  DateTime
 	Duration int64
@@ -22,6 +29,23 @@ type Summary struct {
 }
 
 type Status struct {
-	Type                         string
+	// Type                         string
 	Success, Failed, Error, Skip int64
 }
+
+type Detail struct {
+	Title   string
+	Status  Status
+	Records []Record
+}
+
+type Record struct {
+	Stat       int64
+	Desc       string
+	Elapsed    int64 //ms
+	Request    DataMap
+	Response   DataMap
+	Validators []Validator
+}
+
+type DataMap = map[string]interface{}

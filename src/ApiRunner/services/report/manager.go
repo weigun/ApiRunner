@@ -1,5 +1,5 @@
 // report_service.go
-package services
+package report
 
 // import (
 // 	"ApiRunner/dao"

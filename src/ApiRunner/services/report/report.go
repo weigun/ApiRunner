@@ -3,8 +3,25 @@ package report
 
 import (
 	"fmt"
+	"time"
 )
 
-func main() {
-	fmt.Println("Hello World!")
+const (
+	SUCCESS = iota
+	FAILED
+	ERROR
+	SKIP
+)
+
+type DateTime = time.Time
+
+type Summary struct {
+	StartAt  DateTime
+	Duration int64
+	Status   []Status
+}
+
+type Status struct {
+	Type                         string
+	Success, Failed, Error, Skip int64
 }

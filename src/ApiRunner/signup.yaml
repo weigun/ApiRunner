@@ -14,13 +14,13 @@ params:
   password_confirmation: "{{$password_confirmation}}"
 #Export: 
 #  token: "{{.body.token}}"
-MultipartFile: 
-  params: 
-    filedkey1: 10
-    filedkey2: "go"
-  files: 
-    signup: signup.yaml
-    main: main.go
+# MultipartFile: 
+#   params: 
+#     filedkey1: 10
+#     filedkey2: "go"
+#   files: 
+#     signup: signup.yaml
+#     main: main.go
 
 validate:
   - op: eq

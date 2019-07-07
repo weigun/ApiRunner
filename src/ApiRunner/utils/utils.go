@@ -4,6 +4,8 @@ import (
 	// "bytes"
 	// "encoding/json"
 	// "io/ioutil"
+	"crypto/md5"
+	"encoding/hex"
 	"log"
 	"os"
 	"path/filepath"
@@ -79,4 +81,10 @@ func Exists(path string) bool {
 		return false
 	}
 	return true
+}
+
+func MD5(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
 }

@@ -56,6 +56,7 @@ type Header = map[string]interface{}
 type Params = map[string]interface{}
 
 type Validator struct {
+	Check    string      `json:"check"  yaml:"check" toml:"check"`
 	Op       string      `json:"op"  yaml:"op" toml:"op"`
 	Actual   interface{} `json:"actual"  yaml:"actual" toml:"actual"`
 	Expected interface{} `json:"expected"  yaml:"expected" toml:"expected"`

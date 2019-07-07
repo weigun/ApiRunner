@@ -201,6 +201,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		//比较结果
 		for _, validator := range api.Validate {
 			// TODO 渲染变量时，适配各种数据类型
+			validator.Check = validator.Actual.(string)
 			compare := getAssertByOp(validator.Op)
 			actual := render.renderWithData(validator.Actual.(string), data)
 			expected := render.renderValue(validator.Expected.(string), true)

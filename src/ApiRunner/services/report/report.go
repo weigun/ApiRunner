@@ -2,8 +2,10 @@
 package report
 
 import (
+	"io/ioutil"
 	//std
 	// "fmt"
+	"net/http"
 	"time"
 
 	//third party
@@ -68,8 +70,8 @@ type Record struct {
 	Stat       int64
 	Desc       string
 	Elapsed    int64 //ms
-	Request    DataMap
-	Response   DataMap
+	Request    *http.Request
+	Response   *http.Response
 	Validators []Validator
 }
 
@@ -133,6 +135,43 @@ func NewRecord() *Record {
 	return &Record{}
 }
 
-func name() {
+func (rc *Record) SetValidators(vds []Validator) {
+	rc.Validators = vds
+}
 
+func (rc *Record) AddValidator(vd Validator) {
+	rc.Validators = append(rc.Validators, vd)
+}
+
+func (rc *Record) AddValidator(vd Validator) {
+	rc.Validators = append(rc.Validators, vd)
+}
+
+func (rc *Record) MarshalJSON() ([]byte, error) {
+	//自定义编组过程
+	dict := make(DataMap{})
+	req := make(DataMap{})
+	resp := make(DataMap{})
+	dict[`stat`] = rc.Stat
+	dict[`desc`] = rc.Desc
+	dict[`elapsed`] = rc.Elapsed
+	req[`url`] = rc.Request.URL.String()
+	req[`method`] = rc.Request.Method
+	req[`header`] = rc.Request.Header
+	//handle request playload
+	body, err := rc.Request.GetBody()
+	if err != nil {
+		panic(err)
+	}
+	req[`body`] = string(ioutil.ReadAll(body))
+	dict[`request`] = req
+
+	resp[`url`] = rc.Response.Request.URL.String()
+	resp[`statusCode`] = rc.Response.StatusCode
+	resp[`cookies`] = rc.Response.Cookies() //maybe each cookie call string()
+	resp[`header`] = rc.Response.Header
+	resp[`body`] = string(ioutil.ReadAll(rc.Response.Body))
+	dict[`response`] = resp
+	dict[`validators`] = rc.Validators
+	return json.Marshal(dict)
 }

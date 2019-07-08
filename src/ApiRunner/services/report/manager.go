@@ -3,11 +3,11 @@ package report
 
 import (
 	"ApiRunner/dao"
-	"ApiRunner/models"
+	// "ApiRunner/models"
 	"ApiRunner/utils"
 
 	"encoding/json"
-	"errors"
+	// "errors"
 	"fmt"
 )
 
@@ -27,7 +27,7 @@ func (rm *ReportManager) Add(r *Report) string {
 	jsReport := r.Json()
 	rid := utils.MD5(jsReport)
 	key := fmt.Sprintf(`%s:%s`, DefaultReportKey, rid)
-	rm.cache.Put(key, jsReport)
+	rm.cache.Put(key, jsReport, 3600*24*30)
 	return rid
 }
 
@@ -52,7 +52,7 @@ func (rm *ReportManager) Get(rid string) string {
 
 func (rm *ReportManager) Remove(rid string) error {
 	key := fmt.Sprintf(`%s:%s`, DefaultReportKey, rid)
-	return rm.cache.Delete()
+	return rm.cache.Delete(key)
 }
 
 func init() {

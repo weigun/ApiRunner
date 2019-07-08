@@ -5,7 +5,7 @@ import (
 	"log"
 	//third party
 	//project self
-	"ApiRunner/service/report"
+	_ "ApiRunner/services/report"
 )
 
 func init() {

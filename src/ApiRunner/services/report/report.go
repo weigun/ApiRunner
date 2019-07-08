@@ -5,16 +5,17 @@ import (
 	"io/ioutil"
 	//std
 	// "fmt"
+	"log"
 	"net/http"
 	"time"
 
 	//third party
-	"github.com/json-iterator/go"
-
-	. "ApiRunner/models"
+	// "github.com/json-iterator/go"
+	"ApiRunner/models"
+	"encoding/json"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 const (
 	SUCCESS = iota
@@ -72,7 +73,7 @@ type Record struct {
 	Elapsed    int64 //ms
 	Request    *http.Request
 	Response   *http.Response
-	Validators []Validator
+	Validators []models.Validator
 }
 
 type DataMap = map[string]interface{}
@@ -98,7 +99,7 @@ func (rp *Report) AddDetail(detail Detail) {
 func (rp *Report) Json() string {
 	jsonStr, err := json.Marshal(rp)
 	if err != nil {
-		fmt.Println(`Report to json failed:`, err.Error())
+		log.Println(`Report to json failed:`, err.Error())
 		return `{}`
 	}
 	return string(jsonStr)
@@ -107,14 +108,14 @@ func (rp *Report) Json() string {
 // Summary
 
 func NewSummary() *Summary {
-	return &Summary{Status: make([]Status{}, 2)}
+	return &Summary{Status: make([]Status, 2)}
 }
 
 func (sum *Summary) Counter(which int64) *Status {
 	if which == TESTSUITS {
-		return *sum.Status[0]
+		return &sum.Status[0]
 	}
-	return *sum.Status[1]
+	return &sum.Status[1]
 }
 
 // Details
@@ -135,23 +136,19 @@ func NewRecord() *Record {
 	return &Record{}
 }
 
-func (rc *Record) SetValidators(vds []Validator) {
+func (rc *Record) SetValidators(vds []models.Validator) {
 	rc.Validators = vds
 }
 
-func (rc *Record) AddValidator(vd Validator) {
-	rc.Validators = append(rc.Validators, vd)
-}
-
-func (rc *Record) AddValidator(vd Validator) {
+func (rc *Record) AddValidator(vd models.Validator) {
 	rc.Validators = append(rc.Validators, vd)
 }
 
 func (rc *Record) MarshalJSON() ([]byte, error) {
 	//自定义编组过程
-	dict := make(DataMap{})
-	req := make(DataMap{})
-	resp := make(DataMap{})
+	dict := make(DataMap)
+	req := make(DataMap)
+	resp := make(DataMap)
 	dict[`stat`] = rc.Stat
 	dict[`desc`] = rc.Desc
 	dict[`elapsed`] = rc.Elapsed
@@ -163,14 +160,22 @@ func (rc *Record) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		panic(err)
 	}
-	req[`body`] = string(ioutil.ReadAll(body))
+	bBody, err := ioutil.ReadAll(body)
+	if err != nil {
+		panic(err)
+	}
+	req[`body`] = string(bBody)
 	dict[`request`] = req
 
 	resp[`url`] = rc.Response.Request.URL.String()
 	resp[`statusCode`] = rc.Response.StatusCode
 	resp[`cookies`] = rc.Response.Cookies() //maybe each cookie call string()
 	resp[`header`] = rc.Response.Header
-	resp[`body`] = string(ioutil.ReadAll(rc.Response.Body))
+	bBody, err = ioutil.ReadAll(rc.Response.Body)
+	if err != nil {
+		panic(err)
+	}
+	resp[`body`] = string(bBody)
 	dict[`response`] = resp
 	dict[`validators`] = rc.Validators
 	return json.Marshal(dict)

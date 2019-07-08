@@ -94,6 +94,7 @@ func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespH
 	request = hook.beforeRequest(request).(*http.Request)
 	response, err := this.client.Do(request)
 	response = hook.afterResponse(response).(*http.Response)
+	resp.RAW = response
 	if err != nil {
 		resp.ErrMsg = err.Error()
 		if response != nil {
@@ -108,6 +109,8 @@ func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespH
 			//			log.Println(string(body))
 		}
 		resp.Code = response.StatusCode
+		resp.Header = response.Header
+		resp.Cookies = response.Cookies()
 		resp.Content = string(body)
 		response.Body.Close()
 		io.Copy(ioutil.Discard, response.Body)
@@ -207,6 +210,9 @@ func toJson(params models.Params) string {
 
 type Response struct {
 	Code    int
+	Header  http.Header
+	Cookies []*http.Cookie
 	Content string
 	ErrMsg  string
+	RAW     *http.Response
 }

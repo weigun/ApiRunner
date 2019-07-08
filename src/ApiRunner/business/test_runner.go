@@ -9,6 +9,7 @@ import (
 	_ "net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	// "github.com/davecgh/go-spew/spew"
 
@@ -44,9 +45,11 @@ func (r *TestRunner) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	valueCtx := context.WithValue(ctx, `status`, r.Status)
 	r.canceler = cancel
+	//new report
+	report := models.NewReport()
 	go func(ctx context.Context) {
 		//TODO 需要保存堆栈
-		go execute(r) //用例执行
+		go execute(r, report) //用例执行
 		// select {
 		// case <-ctx.Done():
 		// 	log.Println("runner done")
@@ -67,7 +70,7 @@ func (r *TestRunner) Stop() {
 	r.canceler()
 }
 
-func execute(r *TestRunner) {
+func execute(r *TestRunner, report *models.Report) {
 	//具体执行用例的实体函数
 	caseObj := r.CaseObj
 	switch r.CaseObj.(type) {
@@ -82,6 +85,10 @@ func execute(r *TestRunner) {
 	}
 
 	//顺序执行用例
+	//开始计时
+	sum := models.NewSummary()
+	sum.StartAt = time.Now()
+	report.SetSummary(*sum)
 	render := newRenderer(r.ID)
 	// requestor := NewRequestor()
 	_type := caseObj.GetType()
@@ -114,8 +121,7 @@ func execute(r *TestRunner) {
 func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) {
 	// spew.Dump(caseObj)
 	requestor := NewRequestor()
-	//caseConfStr := renderTestCase(caseObj.Config.Json(), true)
-	//caseConf := json.Unmarshal([]byte(caseConfStr), &models.CaseConfig{})
+	detail := models.NewDetail()
 	var caseConf models.CaseConfig
 	log.Println(`render config`)
 	err := render.renderObj(caseObj.Config.Json(), true, &caseConf)
@@ -124,6 +130,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		return
 	}
 	caseObj.Config = caseConf
+	detail.Title = caseConf.Name
 	//将全局变量同步到变量服务
 	for varName, varVal := range caseConf.Variables {
 		services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
@@ -156,19 +163,30 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		var header models.Header
 		var resp *Response
 
+		recodr := models.NewRecord()
+
 		render.renderObj(toJson(api.Headers), true, &header)
+		var startTime time.Time
 		if api.MultipartFile.IsEnabled() {
 			var mpf models.MultipartFile
 			render.renderObj(api.MultipartFile.Json(), true, &mpf)
 			req := requestor.BuildPostFiles(url, mpf, header)
+			recodr.Request = req
+			startTime = time.Now()
 			resp = requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		} else {
 			var params models.Params
 			render.renderObj(toJson(api.Params), true, &params)
 			req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
+			recodr.Request = req
+			startTime = time.Now()
 			resp = requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		}
+		elapsed := time.Now().Sub(startTime).Nanoseconds()
 		log.Println(resp)
+		recodr.Desc = api.Name
+		recodr.Elapsed = elapsed / 1e6
+		recodr.Response = resp.RAW
 		data := make(map[string]interface{})
 		data[`StatusCode`] = resp.Code
 		//导出变量，如token等
@@ -199,6 +217,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		}
 
 		//比较结果
+		allPassed := true
 		for _, validator := range api.Validate {
 			// TODO 渲染变量时，适配各种数据类型
 			validator.Check = validator.Actual.(string)
@@ -206,8 +225,18 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 			actual := render.renderWithData(validator.Actual.(string), data)
 			expected := render.renderValue(validator.Expected.(string), true)
 			isPassed := So(actual, compare, expected)
+			if !isPassed {
+				allPassed = false
+			}
 			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, expected, isPassed)
+			recodr.AddValidator(validator)
+		}
+		if allPassed {
+			recodr.Stat = models.SUCCESS
+		} else {
+			recodr.Stat = models.FAILED
 		}
 
+		detail.AddRecord(*recodr)
 	}
 }

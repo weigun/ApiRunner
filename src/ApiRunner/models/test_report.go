@@ -60,6 +60,10 @@ func (s *Status) Count(stat int64) {
 	}
 }
 
+func (s *Status) Total() int64 {
+	return s.Success + s.Error + s.Failed + s.Skip
+}
+
 type Detail struct {
 	Title   string
 	Status  Status

@@ -90,11 +90,10 @@ func execute(r *TestRunner, report *models.Report) {
 	sum.StartAt = time.Now()
 	report.SetSummary(*sum)
 	render := newRenderer(r.ID)
-	// requestor := NewRequestor()
 	_type := caseObj.GetType()
 	if _type == models.TYPE_TESTCASE {
 		caseObj := r.CaseObj.(*models.TestCase)
-		executeTestCase(render, caseObj, r)
+		executeTestCase(render, caseObj, r, report)
 	} else {
 		caseObj := r.CaseObj.(*models.TestSuites)
 		// spew.Dump(caseObj)
@@ -112,13 +111,30 @@ func execute(r *TestRunner, report *models.Report) {
 		for _, caseItem := range caseObj.CaseList {
 			for caseName, ts := range caseItem {
 				log.Println(`executeTestCase:`, caseName)
-				executeTestCase(render, &ts, r)
+				executeTestCase(render, &ts, r, report)
 			}
 		}
 	}
+	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
+	//统计status
+	for _, dt := range report.Details {
+		for _, record := range dt.Records {
+			dt.Status.Count(record.Stat)
+			sum.Status[1].Count(record.Stat)
+		}
+		if dt.Status.Error > 0 || dt.Status.Failed > 0 {
+			sum.Status[0].Count(models.FAILED)
+		} else {
+			sum.Status[0].Count(models.SUCCESS)
+		}
+
+	}
+
+	report.SetSummary(*sum)
+	log.Println(report.Json())
 }
 
-func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) {
+func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, report *models.Report) {
 	// spew.Dump(caseObj)
 	requestor := NewRequestor()
 	detail := models.NewDetail()
@@ -163,7 +179,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 		var header models.Header
 		var resp *Response
 
-		recodr := models.NewRecord()
+		record := models.NewRecord()
 
 		render.renderObj(toJson(api.Headers), true, &header)
 		var startTime time.Time
@@ -171,22 +187,22 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 			var mpf models.MultipartFile
 			render.renderObj(api.MultipartFile.Json(), true, &mpf)
 			req := requestor.BuildPostFiles(url, mpf, header)
-			recodr.Request = req
+			record.Request = req
 			startTime = time.Now()
 			resp = requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		} else {
 			var params models.Params
 			render.renderObj(toJson(api.Params), true, &params)
 			req := requestor.BuildRequest(url, render.renderValue(api.Method, true), params, header)
-			recodr.Request = req
+			record.Request = req
 			startTime = time.Now()
 			resp = requestor.doRequest(req, api.BeforeRequest, api.AfterResponse)
 		}
 		elapsed := time.Now().Sub(startTime).Nanoseconds()
 		log.Println(resp)
-		recodr.Desc = api.Name
-		recodr.Elapsed = elapsed / 1e6
-		recodr.Response = resp.RAW
+		record.Desc = api.Name
+		record.Elapsed = elapsed / 1e6
+		record.Response = resp.RAW
 		data := make(map[string]interface{})
 		data[`StatusCode`] = resp.Code
 		//导出变量，如token等
@@ -229,14 +245,17 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner) 
 				allPassed = false
 			}
 			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, expected, isPassed)
-			recodr.AddValidator(validator)
+			record.AddValidator(validator)
 		}
+		// TODO error and skip
 		if allPassed {
-			recodr.Stat = models.SUCCESS
+			record.Stat = models.SUCCESS
 		} else {
-			recodr.Stat = models.FAILED
+			record.Stat = models.FAILED
 		}
 
-		detail.AddRecord(*recodr)
+		detail.AddRecord(*record)
+		report.AddDetail(*detail)
+
 	}
 }

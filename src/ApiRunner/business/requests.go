@@ -22,9 +22,6 @@ const (
 	MAX_CONNEECTIONS = 100 //连接池数
 )
 
-type RefReq = *http.Request
-type RefRsp = *http.Response
-
 type IRequest interface {
 	doRequest(request *http.Request) *Response
 }

@@ -58,6 +58,8 @@ func (s *Status) Count(stat int64) {
 		s.Error += 1
 	case SKIP:
 		s.Skip += 1
+	default:
+		log.Printf(`unknow stat %T,%v`, stat, stat)
 	}
 }
 

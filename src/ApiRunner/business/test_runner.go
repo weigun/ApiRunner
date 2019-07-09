@@ -120,9 +120,10 @@ func execute(r *TestRunner, report *models.Report) {
 	//统计status
 	for _, dt := range report.Details {
 		for _, record := range dt.Records {
-			dt.Status.Count(record.Stat)
+			// dt.Status.Count(record.Stat)
 			sum.Status[1].Count(record.Stat)
 		}
+		// report.Details[index] = dt
 		if dt.Status.Error > 0 || dt.Status.Failed > 0 {
 			sum.Status[0].Count(models.FAILED)
 		} else {
@@ -246,6 +247,8 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, 
 				allPassed = false
 			}
 			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, expected, isPassed)
+			validator.Actual = actual
+			validator.Expected = expected
 			record.AddValidator(validator)
 		}
 		// TODO error and skip
@@ -256,6 +259,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, 
 		}
 
 		detail.AddRecord(*record)
+		detail.Status.Count(record.Stat)
 		report.AddDetail(*detail)
 
 	}

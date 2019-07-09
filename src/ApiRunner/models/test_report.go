@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	//std
 	// "fmt"
+	"ApiRunner/models/young"
 	"log"
 	"net/http"
 	"time"
@@ -75,7 +76,7 @@ type Record struct {
 	Desc       string
 	Elapsed    int64 //ms
 	Request    *http.Request
-	Response   *http.Response
+	Response   *young.Response
 	Validators []Validator
 }
 
@@ -170,15 +171,11 @@ func (rc *Record) MarshalJSON() ([]byte, error) {
 	req[`body`] = string(bBody)
 	dict[`request`] = req
 
-	resp[`url`] = rc.Response.Request.URL.String()
-	resp[`statusCode`] = rc.Response.StatusCode
-	resp[`cookies`] = rc.Response.Cookies() //maybe each cookie call string()
+	resp[`url`] = rc.Request.URL.String()
+	resp[`statusCode`] = rc.Response.Code
+	resp[`cookies`] = rc.Response.Cookies
 	resp[`header`] = rc.Response.Header
-	bBody, err = ioutil.ReadAll(rc.Response.Body)
-	if err != nil {
-		panic(err)
-	}
-	resp[`body`] = string(bBody)
+	resp[`body`] = rc.Response.Content
 	dict[`response`] = resp
 	dict[`validators`] = rc.Validators
 	return json.Marshal(dict)

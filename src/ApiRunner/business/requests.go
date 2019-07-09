@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"ApiRunner/models"
+	"ApiRunner/models/young"
 	"ApiRunner/utils"
 )
 
@@ -21,10 +22,6 @@ const (
 	TIMEOUT          = 60
 	MAX_CONNEECTIONS = 100 //连接池数
 )
-
-type IRequest interface {
-	doRequest(request *http.Request) *Response
-}
 
 var client *http.Client
 var once sync.Once
@@ -56,20 +53,20 @@ func NewRequestor() *requests {
 	return &requests{client}
 }
 
-func (this *requests) Get(url string, params models.Params) *Response {
+func (this *requests) Get(url string, params models.Params) *young.Response {
 	request := this.BuildRequest(url, "GET", params, nil)
 	return this.doRequest(request, ``, ``)
 }
 
-func (this *requests) Post(url string, params models.Params) *Response {
+func (this *requests) Post(url string, params models.Params) *young.Response {
 	request := this.BuildRequest(url, "POST", params, nil)
 	return this.doRequest(request, ``, ``)
 }
 
-func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespHook string) *Response {
+func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespHook string) *young.Response {
 	//执行请求
 	// log.Println("-------before request:", request)
-	resp := Response{}
+	resp := young.Response{}
 	//beforeRequest hook
 	if beforeReqHook == `` {
 		beforeReqHook = `beforeRequest`
@@ -91,7 +88,7 @@ func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespH
 	request = hook.beforeRequest(request).(*http.Request)
 	response, err := this.client.Do(request)
 	response = hook.afterResponse(response).(*http.Response)
-	resp.RAW = response
+	// resp.RAW = response
 	if err != nil {
 		resp.ErrMsg = err.Error()
 		if response != nil {
@@ -203,13 +200,4 @@ func encode(params models.Params) string {
 func toJson(params models.Params) string {
 	//转json，用于post方法
 	return utils.Map2Json(params)
-}
-
-type Response struct {
-	Code    int
-	Header  http.Header
-	Cookies []*http.Cookie
-	Content string
-	ErrMsg  string
-	RAW     *http.Response
 }

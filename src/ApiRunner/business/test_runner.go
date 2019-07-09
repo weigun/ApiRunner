@@ -14,6 +14,7 @@ import (
 	// "github.com/davecgh/go-spew/spew"
 
 	"ApiRunner/models"
+	"ApiRunner/models/young"
 	"ApiRunner/services"
 	"ApiRunner/utils"
 )
@@ -177,7 +178,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, 
 
 		//MultipartFile比普通post请求优先级要高
 		var header models.Header
-		var resp *Response
+		var resp *young.Response
 
 		record := models.NewRecord()
 
@@ -202,7 +203,7 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, 
 		log.Println(resp)
 		record.Desc = api.Name
 		record.Elapsed = elapsed / 1e6
-		record.Response = resp.RAW
+		record.Response = resp
 		data := make(map[string]interface{})
 		data[`StatusCode`] = resp.Code
 		//导出变量，如token等

@@ -44,7 +44,7 @@ func _parseTestCase(ts map[string]interface{}) (caseMap map[string]interface{}) 
 	} else if _, ok := ts[`testcases`]; ok {
 		// testsuits here
 		for index, caseInfo := range ts[`testcases`].([]interface{}) {
-			caseInfo := caseInfo.(map[interface{}]interface{})
+			caseInfo := caseInfo.(map[string]interface{})
 			for caseDesc, caseFile := range caseInfo {
 				m := require(caseFile.(string))
 				log.Println(`testsuit`)
@@ -108,9 +108,9 @@ func parseSingleCase(ts map[string]interface{}) {
 		//处理hook
 		rawApi[`beforeRequest`] = apiItem[`beforeRequest`]
 		rawApi[`afterResponse`] = apiItem[`afterResponse`]
-		log.Println(`++++++++++++++++++++++++`)
-		spew.Dump(rawApi)
-		log.Println(`++++++++++++++++++++++++`)
+		// log.Println(`++++++++++++++++++++++++`)
+		// spew.Dump(rawApi)
+		// log.Println(`++++++++++++++++++++++++`)
 		ts[`apis`].([]interface{})[index] = rawApi
 	}
 }
@@ -157,11 +157,12 @@ func toObj(caseMap map[string]interface{}, ext string) models.ICaseObj {
 		// byteCaseMap, _ := yaml.Marshal(caseMap)
 		if isTestSuits {
 			//用例集
+			spew.Dump(caseMap)
 			var ts models.TestSuites
 			if err := mapstructure.Decode(caseMap, &ts); err != nil {
 				log.Panic(err.Error())
 			}
-			// yaml.Unmarshal(byteCaseMap, &ts)
+			spew.Dump(ts)
 			return &ts
 		} else {
 			//单个用例

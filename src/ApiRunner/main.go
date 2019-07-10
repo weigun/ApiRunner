@@ -2,9 +2,12 @@ package main
 
 import (
 	"ApiRunner/business"
+	"ApiRunner/utils"
+
 	// "fmt"
 
 	// "ApiRunner/services"
+	"path/filepath"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -18,7 +21,7 @@ func main() {
 	// runner := business.NewTestRunner(`signup`, caseObj)
 	// runner.Start()
 
-	caseObj2 := business.ParseTestCase(`D:\test-area\github\ApiRunner_web\src\ApiRunner\testcase\all.yaml`)
+	caseObj2 := business.ParseTestCase(filepath.Join(utils.GetCwd(), `testcase`, `all.yaml`))
 	spew.Dump(caseObj2)
 	runner2 := business.NewTestRunner(`signup`, caseObj2)
 	runner2.Start()

@@ -167,13 +167,13 @@ func toObj(caseMap map[string]interface{}, ext string) models.ICaseObj {
 		} else {
 			//单个用例
 
-			var ts models.TestCase
-			if err := mapstructure.Decode(caseMap, &ts); err != nil {
+			var tc models.TestCase
+			if err := mapstructure.Decode(caseMap, &tc); err != nil {
 				log.Panic(err.Error())
 			}
 			// yaml.Unmarshal(byteCaseMap, &ts)
 			// spew.Dump(ts)
-			return &ts
+			return &tc
 		}
 	case `.json`, `.conf`:
 		byteCaseMap, _ := json.Marshal(caseMap)

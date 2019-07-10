@@ -24,4 +24,14 @@ apis:
     beforeRequest: beforeRequest
     afterResponse: afterResponse
         
-    
+  - name: test_activate
+    api: test_activate.yaml
+    variables:
+        email: "{{$mymail}}"
+
+    validate:
+      - op: substring
+        actual: "{{.body}}"
+        expected: 激活成功
+    # beforeRequest: beforeRequest
+    # afterResponse: afterResponse    

@@ -54,6 +54,12 @@ func HaveLength(actual interface{}, expected ...interface{}) bool {
 	return ret == SUCCESS
 }
 
+func ContainSubstring(actual interface{}, expected ...interface{}) bool {
+	ret := assertLib.ShouldContainSubstring(actual, expected...)
+	log.Println(`Assert ShouldContainSubstring:`, ret)
+	return ret == SUCCESS
+}
+
 func So(actual interface{}, assert assertion, expected ...interface{}) bool {
 	isok := assert(actual, expected...)
 	// isok, result := assertLib.So(actual, assert, expected...)
@@ -64,14 +70,15 @@ func So(actual interface{}, assert assertion, expected ...interface{}) bool {
 }
 
 var assertMap = map[string]assertion{
-	`eq`:    Equal,
-	`equal`: Equal,
-	`gt`:    GreaterThan,
-	`lt`:    LessThan,
-	`le`:    LessThanOrEqual,
-	`ge`:    GreaterThanOrEqual,
-	`in`:    Contain,
-	`len`:   HaveLength,
+	`eq`:        Equal,
+	`equal`:     Equal,
+	`gt`:        GreaterThan,
+	`lt`:        LessThan,
+	`le`:        LessThanOrEqual,
+	`ge`:        GreaterThanOrEqual,
+	`in`:        Contain,
+	`len`:       HaveLength,
+	`substring`: ContainSubstring,
 }
 
 func getAssertByOp(op string) assertion {

@@ -211,17 +211,26 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, 
 		if resp.ErrMsg == `` {
 			//没有错误的时候才能导出变量
 			//TODO assert code??
+			contentMap := utils.Json2Map([]byte(resp.Content))
+			if len(contentMap) == 0 {
+				//如果resp.Content返回是{}或者非json
+				//则直接将正文给body
+				data[`body`] = resp.Content
+			} else {
+				data[`body`] = contentMap
+			}
 			for ek, ev := range api.Export {
 				v := ev.(string)
 				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
 					//返回json则需要提取变量
-					contentMap := utils.Json2Map([]byte(resp.Content))
-					data[`body`] = contentMap
+					// contentMap := utils.Json2Map([]byte(resp.Content))
+					// data[`body`] = contentMap
 					bindVal := render.renderWithData(v, data)
 					services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
 					log.Println("add ExportVars:", render.tag, ek, bindVal)
 				} else {
 					//plain text
+					// data[`body`] = resp.Content
 					regx := regexp.MustCompile(v)
 					match := regx.FindStringSubmatch(resp.Content)
 					if match != nil {
@@ -260,7 +269,6 @@ func executeTestCase(render *renderer, caseObj *models.TestCase, r *TestRunner, 
 
 		detail.AddRecord(*record)
 		detail.Status.Count(record.Stat)
-		report.AddDetail(*detail)
-
 	}
+	report.AddDetail(*detail)
 }

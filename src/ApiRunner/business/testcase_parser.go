@@ -31,7 +31,7 @@ func ParseTestCase(filePath string) (caseObj models.ICaseObj) {
 	if len(caseMap) == 0 {
 		return
 	}
-	caseObj = toObj(caseMap, filepath.Ext(filePath))
+	caseObj = toObj(caseMap)
 	spew.Dump(filePath)
 	return
 }
@@ -129,10 +129,6 @@ func require(casePath string) map[string]interface{} {
 	switch filepath.Ext(casePath) {
 	case `.yaml`, `yml`:
 		raw = yaml.UnmarshalToMapStr(content)
-		// err = yaml.UnmarshalToMapStr(content, &raw)
-		// log.Println(`222222222222222222222222222`)
-		// spew.Dump(raw)
-		// os.Exit(0)
 		if err != nil {
 			log.Fatal("parse yaml error:", err.Error())
 		}
@@ -147,50 +143,35 @@ func require(casePath string) map[string]interface{} {
 	return raw
 }
 
-func toObj(caseMap map[string]interface{}, ext string) models.ICaseObj {
+func toObj(caseMap map[string]interface{}) models.ICaseObj {
 	var isTestSuits bool
 	if _, ok := caseMap[`testcases`]; ok {
 		isTestSuits = true
 	}
-	switch ext {
-	case `.yaml`, `.yml`:
-		// byteCaseMap, _ := yaml.Marshal(caseMap)
-		if isTestSuits {
-			//用例集
-			spew.Dump(caseMap)
-			var ts models.TestSuites
-			if err := mapstructure.Decode(caseMap, &ts); err != nil {
-				log.Panic(err.Error())
-			}
-			spew.Dump(ts)
-			return &ts
-		} else {
-			//单个用例
-
-			var tc models.TestCase
-			if err := mapstructure.Decode(caseMap, &tc); err != nil {
-				log.Panic(err.Error())
-			}
-			// yaml.Unmarshal(byteCaseMap, &ts)
-			// spew.Dump(ts)
-			return &tc
+	config := &mapstructure.DecoderConfig{
+		TagName: "json",
+	}
+	if isTestSuits {
+		//用例集
+		var ts models.TestSuites
+		config.Result = &ts
+		decoder, err := mapstructure.NewDecoder(config)
+		if err != nil {
+			log.Panic(err.Error())
 		}
-	case `.json`, `.conf`:
-		byteCaseMap, _ := json.Marshal(caseMap)
-		if isTestSuits {
-			//用例集
-			var ts models.TestSuites
-			json.Unmarshal(byteCaseMap, &ts)
-			return &ts
-		} else {
-			//单个用例
-			var ts models.TestCase
-			json.Unmarshal(byteCaseMap, &ts)
-			return &ts
+		decoder.Decode(caseMap)
+		// spew.Dump(ts)
+		return &ts
+	} else {
+		//单个用例
+		var tc models.TestCase
+		config.Result = &tc
+		decoder, err := mapstructure.NewDecoder(config)
+		if err != nil {
+			log.Panic(err.Error())
 		}
-	default:
-		log.Fatal(`toObj failed,not support case format `, ext)
+		decoder.Decode(caseMap)
+		return &tc
 	}
 	return &models.TestCase{}
-
 }

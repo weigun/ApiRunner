@@ -1,0 +1,42 @@
+name: sign up
+path: /api/signup
+method: POST
+ref: sign_up
+extends: globle/base.yaml
+func: 
+  email: 111@qq.com
+  password: "111111"
+  password_confirmation: "111111"
+return: 
+  email: "{{$email}}"
+  token: "{{{.body.token}}"
+
+
+name: sign up
+variables:
+  email: 111@qq.com
+  password: "111111"
+  password_confirmation: "111111"
+path: /api/signup
+method: POST
+headers:
+  Content-Type: "application/json"
+  Authorization: ""
+params:
+  email: "{{$email}}"
+  password: "{{$password}}"
+  password_confirmation: "{{$password_confirmation}}"
+#Export: 
+#  token: "{{.body.token}}"
+# MultipartFile: 
+#   params: 
+#     filedkey1: 10
+#     filedkey2: "go"
+#   files: 
+#     signup: signup.yaml
+#     main: main.go
+
+validate:
+  - op: eq
+    actual: "{{.StatusCode}}"
+    expected: 200

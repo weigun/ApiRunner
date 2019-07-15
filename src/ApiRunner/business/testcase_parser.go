@@ -3,6 +3,7 @@ package business
 
 import (
 	"ApiRunner/models"
+	"ApiRunner/utils"
 	"ApiRunner/utils/yaml"
 
 	// "os"
@@ -121,7 +122,10 @@ func require(casePath string) map[string]interface{} {
 
 	log.Printf("ReadFile: %v", casePath)
 	// TODO 需要设置根目录
-	content, err := ioutil.ReadFile(casePath)
+	pathList := []string{utils.GetCwd()}
+	pathList = append(pathList, casePath)
+	casePathAbs := filepath.Join(pathList...)
+	content, err := ioutil.ReadFile(casePathAbs)
 	if err != nil {
 		log.Fatal("ReadFile error:", err)
 	}

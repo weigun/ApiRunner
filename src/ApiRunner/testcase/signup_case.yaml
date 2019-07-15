@@ -6,7 +6,7 @@ config:
     base_url: http://depay.ixbow.com/
 apis:
   - name: email-normal
-    api: signup.yaml
+    api: testcase\signup.yaml
     variables:
         email: "{{$g_email}}"
     Export: 
@@ -25,7 +25,7 @@ apis:
     afterResponse: afterResponse
         
   - name: test_activate
-    api: test_activate.yaml
+    api: testcase\test_activate.yaml
     variables:
         email: "{{$mymail}}"
 

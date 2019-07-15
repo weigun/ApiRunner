@@ -1,0 +1,51 @@
+config:
+  name: signup testcase
+  host: "{{$base_url}}"
+  variables:
+    g_email: "{{gen_email}}"
+    base_url: http://depay.ixbow.com/
+
+func:
+  email: $g_email
+  password: 111111
+
+return: 
+  emails: "@email"
+  tokens: "@tokens"
+
+
+apis:
+  - name: email-normal
+    extends: testcase\btree.yaml
+    ref: normal
+    validate:
+      - op: eq
+        actual: "{{.body.msg}}"
+        expected: ok
+      - op: eq
+        actual: "{{.body.email}}"
+        expected: "{{$mymail}}"
+      - op: eq
+        actual: "{{.body.code}}"
+        expected: 0
+
+  - name: email-empty
+    extends: testcase\btree.yaml
+    ref: empty
+    when: 
+      error: 
+        maxtry: 3
+        callback:  
+      failed: 
+        maxtry: 1
+      success:  
+        callback: "{{print request}}"
+
+    func: 
+      email: ""
+
+    validate: "{{custom_validator}}"
+    # validate:
+    #   - op: eq
+    #     actual: "{{.body.code}}"
+    #     expected: 1

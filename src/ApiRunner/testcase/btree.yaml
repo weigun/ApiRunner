@@ -1,8 +1,7 @@
 name: sign up
 path: /api/signup
-method: POST
 ref: sign_up
-extends: globle/base.yaml
+extends: testcase\base.yaml
 func: 
   email: 111@qq.com
   password: "111111"

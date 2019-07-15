@@ -1,0 +1,12 @@
+name: post base config
+
+method: POST
+
+headers:
+  Content-Type: "application/json"
+  Authorization: ""
+
+validate:
+  - op: eq
+    actual: "{{.StatusCode}}"
+    expected: 200

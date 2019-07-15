@@ -16,10 +16,10 @@ import (
 func main() {
 	// initGlobalComponents()
 	// bootstrap()
-	// caseObj := business.ParseTestCase(`signup_case.yaml`)
-	// spew.Dump(caseObj)
-	// runner := business.NewTestRunner(`signup`, caseObj)
-	// runner.Start()
+	caseObj := business.ParseTestCase(filepath.Join(utils.GetCwd(), `testcase`, `signup_case.yaml`))
+	spew.Dump(caseObj)
+	runner := business.NewTestRunner(`signup`, caseObj)
+	runner.Start()
 
 	caseObj2 := business.ParseTestCase(filepath.Join(utils.GetCwd(), `testcase`, `all.yaml`))
 	spew.Dump(caseObj2)

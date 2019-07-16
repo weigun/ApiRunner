@@ -1,6 +1,7 @@
 // testsuites
 package models
 
+/*
 import (
 	// "encoding/json"
 	"fmt"
@@ -29,3 +30,4 @@ func (ts *TestSuites) Json() string {
 func (ts *TestSuites) GetType() int {
 	return TYPE_TESTSUITS
 }
+*/

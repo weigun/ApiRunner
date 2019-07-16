@@ -1,7 +1,6 @@
-// api.go
+// job.go
 package models
 
-/*
 import (
 	// "encoding/json"
 	"fmt"
@@ -11,26 +10,27 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-type API struct {
+type Job struct {
 	Name          string        `json:"name" yaml:"name" toml:"name"`
-	Variables     Variables     `json:"variables" yaml:"variables" toml:"variables"`
 	Path          string        `json:"path" yaml:"path" toml:"path"`
 	Method        string        `json:"method" yaml:"method" toml:"method"`
+	Ref           string        `json:"ref" yaml:"ref"`
+	Extends       string        `json:"extends" yaml:"extends"`
+	Import        string        `json:"import" yaml:"import"`
+	Func          Variables     `json:"func,omitempty"  yaml:"func"`
+	Return        Variables     `json:"return,omitempty"  yaml:"return"`
 	Headers       Header        `json:"headers,omitempty"  yaml:"headers" toml:"headers"`
-	Params        Params        `json:"params,omitempty"  yaml:"params" toml:"params"`
-	Export        Variables     `json:"export"  yaml:"export" toml:"export"`
 	MultipartFile MultipartFile `json:"multifiles,omitempty"   yaml:"multifiles" toml:"multifiles"`
 	Validate      []Validator   `json:"validate"  yaml:"validate" toml:"validate"`
-	BeforeRequest string        `json:"beforeRequest"  yaml:"beforeRequest" toml:"beforeRequest"`
-	AfterResponse string        `json:"afterResponse"  yaml:"afterResponse" toml:"afterResponse"`
+	Event         Event         `json:"when,omitempty"  yaml:"when"`
 }
 
-func (api *API) GetName() string {
-	return api.Name
+func (job *Job) GetName() string {
+	return job.Name
 }
 
-func (api *API) Json() string {
-	jsonStr, err := json.Marshal(api)
+func (job *Job) Json() string {
+	jsonStr, err := json.Marshal(job)
 	if err != nil {
 		fmt.Println(`testcase to json failed:`, err.Error())
 		return `{}`
@@ -38,7 +38,7 @@ func (api *API) Json() string {
 	return string(jsonStr)
 }
 
-func (api *API) GetType() int {
+func (job *Job) GetType() int {
 	return TYPE_API
 }
 
@@ -55,6 +55,8 @@ type Header = map[string]interface{}
 // }
 
 type Params = map[string]interface{}
+
+type Event = map[string]interface{}
 
 type Validator struct {
 	Check    string      `json:"check"  yaml:"check" toml:"check"`
@@ -80,4 +82,3 @@ func (mf *MultipartFile) Json() string {
 	}
 	return string(jsonStr)
 }
-*/

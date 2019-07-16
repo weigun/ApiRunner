@@ -1,5 +1,6 @@
 package models
 
+/*
 import (
 	// "encoding/json"
 	"fmt"
@@ -38,3 +39,4 @@ func (tc *TestCase) Json() string {
 func (tc *TestCase) GetType() int {
 	return TYPE_TESTCASE
 }
+*/

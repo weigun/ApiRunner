@@ -35,7 +35,7 @@ apis:
     when: 
       error: 
         maxtry: 3
-        callback:  
+        callback: "{{print request}}"
       failed: 
         maxtry: 1
       success:  
@@ -44,8 +44,14 @@ apis:
     func: 
       email: ""
 
-    validate: "{{custom_validator}}"
-    # validate:
-    #   - op: eq
-    #     actual: "{{.body.code}}"
-    #     expected: 1
+    validate:
+      - op: eq
+        actual: "{{.body.code}}"
+        expected: 1
+  - name: recharge
+    import: testcase\btree.yaml
+    func:
+      amount: 100
+    return:
+      orderId: "{{.body.data}}"
+

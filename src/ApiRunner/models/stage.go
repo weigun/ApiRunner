@@ -18,11 +18,13 @@ type ICaseObj interface {
 }
 
 type Stage struct {
-	Config CaseConfig `json:"config"   yaml:"config"`
-	Ref    string     `json:"ref" yaml:"ref"`
-	Func   Variables  `json:"func,omitempty"  yaml:"func"`
-	Return Variables  `json:"return,omitempty"  yaml:"return"`
-	Jobs   []Job      `json:"jobs"  yaml:"jobs"`
+	Base
+	Extend
+	// Config CaseConfig `json:"config"   yaml:"config"`
+	Env           Variables  `json:"env"   yaml:"env"`
+	MergeMode     string     `json:"mergeMode"   yaml:"mergeMode"`
+	Steps         []Step     `json:"steps"  yaml:"steps"`
+	Notifications StageEvent `json:"notifications"  yaml:"notifications"`
 }
 
 func (st *Stage) GetName() string {

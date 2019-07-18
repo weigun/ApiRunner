@@ -6,11 +6,11 @@ import (
 	"fmt"
 )
 
-type StageItem = map[string]Stage
-
 type Pipeline struct {
-	Config CaseConfig  `json:"config"  yaml:"config" toml:"config"`
-	Stages []StageItem `json:"stages"  yaml:"stages" toml:"testcases"`
+	Base
+	Status        int     `json:"status"  yaml:"status"`
+	Stages        []Stage `json:"stages"  yaml:"stages"`
+	Notifications Event   `json:"notifications"  yaml:"notifications"`
 }
 
 func (pl *Pipeline) GetName() string {

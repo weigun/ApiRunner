@@ -14,7 +14,7 @@ return:
   tokens: "@tokens"
 
 
-apis:
+jobs:
   - name: email-normal
     extends: testcase\btree.yaml
     ref: normal

@@ -11,13 +11,15 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Base struct {
-	Name string `json:"name" yaml:"name"`
-	Ref  string `json:"ref" yaml:"ref"`
+	Name   string `json:"name" yaml:"name"`
+	Ref    string `json:"ref" yaml:"ref"`
+	Repeat int    `json:"repeat" yaml:"repeat"`
 }
 
 type Extend struct {
 	Extends string `json:"extends" yaml:"extends"`
 	Status  int    `json:"status" yaml:"status"`
+	Retry   int    `json:"retry" yaml:"retry"`
 }
 
 type Variables = map[string]interface{}

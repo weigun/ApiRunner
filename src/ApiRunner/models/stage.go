@@ -21,10 +21,10 @@ type Stage struct {
 	Base
 	Extend
 	// Config CaseConfig `json:"config"   yaml:"config"`
-	Env           Variables  `json:"env"   yaml:"env"`
-	MergeMode     string     `json:"mergeMode"   yaml:"mergeMode"`
-	Steps         []Step     `json:"steps"  yaml:"steps"`
-	Notifications StageEvent `json:"notifications"  yaml:"notifications"`
+	Env           Variables   `json:"env"   yaml:"env"`
+	MergeMode     string      `json:"mergeMode"   yaml:"mergeMode"`
+	Steps         []Step      `json:"steps"  yaml:"steps"`
+	Notifications StageAction `json:"notifications"  yaml:"notifications"`
 }
 
 func (st *Stage) GetName() string {

@@ -51,3 +51,7 @@ func (n *rnode) SetParent(parent *rnode) {
 func (n *rnode) AddChild(child *rnode) {
 	n.children = append(n.children, child)
 }
+
+func New(name string) *rnode {
+	return &rnode{name: Name,vars: models.Variables{}}
+}

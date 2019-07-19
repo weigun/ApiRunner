@@ -10,7 +10,7 @@ type Pipeline struct {
 	Base
 	Status        int     `json:"status"  yaml:"status"`
 	Stages        []Stage `json:"stages"  yaml:"stages"`
-	Notifications Event   `json:"notifications"  yaml:"notifications"`
+	Notifications Action  `json:"notifications"  yaml:"notifications"`
 }
 
 func (pl *Pipeline) GetName() string {

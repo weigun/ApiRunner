@@ -53,13 +53,13 @@ func (mf *MultipartFile) Json() string {
 
 type callbacks = []string
 
-type Event struct {
+type Action struct {
 	onSuccess callbacks `json:"onSuccess"  yaml:"onSuccess"`
 	onFailure callbacks `json:"onFailure"  yaml:"onFailure"`
 }
 
-type StageEvent struct {
-	Event
+type StageAction struct {
+	Action
 	onStepFailure callbacks `json:"onStepFailure"  yaml:"onStepFailure"`
 	onStepSuccess callbacks `json:"onStepSuccess"  yaml:"onStepSuccess"`
 }

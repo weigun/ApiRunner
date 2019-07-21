@@ -6,22 +6,17 @@ import (
 )
 
 const (
-	EVT_STEP  = `STEP`
-	EVT_STAGE = `STAGE`
+	EVT_RUNNING = iota
+	EVT_FINISHED
 )
 
-type Event struct {
-	Name string
-	Type string
-}
+type handler func(params interface{}) error
 
-func (evt *Event) Fire() bool {
-	topic := evt.Name
-	eventBus.Publish(evt)
-}
-
-var eventBus EventBus.Bus
-
-func init() {
-	eventBus = EventBus.New()
+type event struct {
+	name      string
+	asyncFlag bool
+	timestamp int64
+	status    int
+	handler   handler
+	params    interface{}
 }

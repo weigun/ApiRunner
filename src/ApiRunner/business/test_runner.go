@@ -69,6 +69,7 @@ func (r *TestRunner) Stop() {
 	log.Println("testrunner stopping")
 	r.Status = Cancel
 	r.canceler()
+	// TODO 干掉eventbus的channel
 }
 
 func execute(r *TestRunner, report *models.Report) {

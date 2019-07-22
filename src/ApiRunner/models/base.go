@@ -11,14 +11,15 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Base struct {
-	Name   string `json:"name" yaml:"name"`
-	Ref    string `json:"ref" yaml:"ref"`
-	Repeat int    `json:"repeat" yaml:"repeat"`
+	Name   string    `json:"name" yaml:"name"`
+	Ref    string    `json:"ref" yaml:"ref"`
+	Repeat int       `json:"repeat" yaml:"repeat"`
+	Export Variables `json:"export"  yaml:"export" toml:"export"`
 }
 
 type Extend struct {
 	Extends string `json:"extends" yaml:"extends"`
-	Status  int    `json:"status" yaml:"status"`
+	Status  int    `json:"status" yaml:"status"` //passde or failed?
 	Retry   int    `json:"retry" yaml:"retry"`
 }
 

@@ -1,0 +1,10 @@
+name: sign up
+path: /api/signup
+extends: testcase\base.yaml
+params: 
+  email: 111@qq.com
+  password: "111111"
+  password_confirmation: "111111" 
+
+
+

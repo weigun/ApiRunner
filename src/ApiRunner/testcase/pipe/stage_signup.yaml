@@ -1,0 +1,118 @@
+name: sign up stage
+ref: sign_up_stage
+retry: "{{$max_retry}}"  #验证失败时，最多重试3次
+env: 
+  email: "{{gen_email}}"
+  pwd: 111111
+  max_retry: 0
+  retcode: 0
+
+notifications: 
+  onSuccess: 
+    - helloStage
+
+  onFailure: 
+    - sayFailed
+
+  onStepSuccess: 
+    - onStepSuccess
+
+  onStepFailure: 
+    - onStepFailure
+
+
+steps: 
+  - name: "signup with {{$email}}"
+    extends: testcase\pipe\signup.yaml
+    params: 
+      email: "{{$email}}"
+      password: "{{$pwd}}"
+      password_confirmation: "{{$pwd}}"
+    export:
+      ret_email: "{{.body.email}}"
+    validate: 
+        - op: eq
+          actual: "{{.body.code}}"
+          expected: "{{$retcode}}"
+        - op: eq
+          actual: "{{.body.email}}"
+          expected: "{{$ret_email}}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

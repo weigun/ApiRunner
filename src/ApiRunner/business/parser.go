@@ -1,7 +1,6 @@
 // testcase_parser.go
 package business
 
-/*
 import (
 	"ApiRunner/models"
 	"ApiRunner/utils"
@@ -39,7 +38,7 @@ func ParseTestCase(filePath string) (caseObj models.ICaseObj) {
 }
 
 func _parseTestCase(ts map[string]interface{}) (caseMap map[string]interface{}) {
-	if _, ok := ts[`apis`]; ok {
+	if _, ok := ts[`stages`]; ok {
 		// testcase here
 		parseSingleCase(ts)
 
@@ -63,17 +62,18 @@ func _parseTestCase(ts map[string]interface{}) (caseMap map[string]interface{}) 
 }
 
 func parseSingleCase(ts map[string]interface{}) {
-	for index, apiItem := range ts[`apis`].([]interface{}) {
-		//遍历接口列表，对rawApi的成员进行替换
+	for index, stageItem := range ts[`stages`].([]interface{}) {
+		//处理stage的继承
 
-		apiItem := apiItem.(map[string]interface{})
-		rawApi := require(apiItem[`api`].(string))
-		for key, val := range apiItem {
-			//
-			//	替换规则：
-			//	非列表、map等结构直接替换
-			//	列表和map则进行合并处理
-			///
+		stageItem := stageItem.(map[string]interface{})
+		// rawApi := require(stageItem[`extends`].(string))
+		baseStage := require(stageItem[`extends`].(string))
+		for key, val := range stageItem {
+			/*
+				替换规则：
+				非列表、map等结构直接替换
+				列表和map则进行合并处理
+			*/
 			// key := key.(string)
 			// if _, ok := rawApi[key]; ok {
 			//只替换存在的字段
@@ -108,8 +108,8 @@ func parseSingleCase(ts map[string]interface{}) {
 			// }
 		}
 		//处理hook
-		rawApi[`beforeRequest`] = apiItem[`beforeRequest`]
-		rawApi[`afterResponse`] = apiItem[`afterResponse`]
+		rawApi[`beforeRequest`] = stageItem[`beforeRequest`]
+		rawApi[`afterResponse`] = stageItem[`afterResponse`]
 		// log.Println(`++++++++++++++++++++++++`)
 		// spew.Dump(rawApi)
 		// log.Println(`++++++++++++++++++++++++`)
@@ -180,4 +180,3 @@ func toObj(caseMap map[string]interface{}) models.ICaseObj {
 	}
 	return &models.TestCase{}
 }
-*/

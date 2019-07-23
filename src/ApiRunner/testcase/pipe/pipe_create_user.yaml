@@ -1,22 +1,17 @@
 name: create user
 ref: new_user
 stages: 
-  - name: first signup normal
-    ref: first
+  - name: signup
+    ref: signup
     extends: testcase\pipe\stage_signup.yaml
 
-  - name: second signup-email empty
-    extends: testcase\pipe\stage_signup.yaml
-    env:
-      email: ""
-      max_retry: 1
-      retcode: 1
 
-  - name: second signup-repeat email
-    extends: testcase\pipe\stage_signup.yaml
+  - name: user login
+    ref: login
+    extends: testcase\pipe\stage_login.yaml
     env:
-      email: $refs.first.email
-      retcode: 1
+      email: "{{$refs.first.email}}"
+
 
 
 

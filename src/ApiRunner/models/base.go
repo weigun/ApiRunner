@@ -19,7 +19,7 @@ type Base struct {
 
 type Extend struct {
 	Extends string `json:"extends" yaml:"extends"`
-	Status  int    `json:"status" yaml:"status"` //passde or failed?
+	Status  int    //passde or failed?
 	Retry   int    `json:"retry" yaml:"retry"`
 }
 

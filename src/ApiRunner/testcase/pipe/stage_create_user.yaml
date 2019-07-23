@@ -1,0 +1,51 @@
+name: create user stage
+ref: new_user
+extends: testcase\pipe\stage_signup.yaml
+mergeMode: tail   #表示本例的steps会合并在stage_signup的steps后面
+
+
+steps: 
+  - name: "login with {{$email}}"
+    extends: testcase\pipe\step_login.yaml
+    params: 
+      email: "{{$email}}"
+      password: "{{$pwd}}"
+    export: 
+      token: "{{.body.token}}"
+    validate: 
+        - op: eq
+          actual: "{{.body.code}}"
+          expected: "{{$retcode}}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

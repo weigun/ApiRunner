@@ -27,7 +27,7 @@ stages:
   - name: second signup-repeat email
     extends: testcase\pipe\stage_signup.yaml
     env:
-      email: $refs.first.email
+      email: "{{$refs.first.email}}"
       retcode: 1
 
 

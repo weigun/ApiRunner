@@ -1,0 +1,10 @@
+name: login
+path: /api/login
+extends: testcase\base.yaml
+params: 
+  email: 111@qq.com
+  password: "111111"
+  
+
+
+

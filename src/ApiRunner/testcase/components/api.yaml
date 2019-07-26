@@ -1,27 +1,12 @@
 name: signup
-type: 1
-ref: signup
-props: 
-  email: "{{gen_email}}"
-components: 
-  - comp_post
+host: ~
+path: /api/signup
+method: POST
+headers: 
+  Content-Type: "application/json"
+  Authorization: "brea {{$token}}"
+params: 
+  email: abc@qq.com
+  password: 111111
+  password_confirmation: 111111
 
-  - comp_path: 
-      attr: 
-        path: /api/signup
-
-  - comp_headers
-
-  - comp_params: 
-      attr: 
-        params: 
-          email: "{{$email}}"
-          password: 111111
-          password_confirmation: 111111
-
-  - comp_export: 
-      attr: 
-        export: 
-          retemail: "{{.body.email}}"
-
-  - comp_validate

@@ -1,12 +1,11 @@
 name: signup
 ref: signup
+
 props: 
   email: "{{gen_email}}"
-  password: 111111
-  password_confirmation: 111111
+  password: "{{gen_pwd}}"
+  password_confirmation: "{{$password}}"
   
 components: 
-  - api: 
-      path: /api/signup
-      props:
-        email: "{{$email}}"
+  - signup-normal:
+      \components\

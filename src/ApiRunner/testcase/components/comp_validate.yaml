@@ -1,6 +1,0 @@
-name: validate
-attr: 
-	validate: 
-    - op: eq
-      actual: "{{.StatusCode}}"
-      expected: 200

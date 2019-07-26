@@ -8,7 +8,8 @@ import (
 
 	// "os"
 
-	"fmt"
+	// "encoding/json"
+	// "fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -16,105 +17,114 @@ import (
 	// toml "github.com/BurntSushi/toml"
 	"github.com/davecgh/go-spew/spew"
 	// "github.com/json-iterator/go"
+
 	// "gopkg.in/yaml.v2"
 	"github.com/mitchellh/mapstructure"
 )
 
 // var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-func ParseTestCase(filePath string) (caseObj models.ICaseObj) {
+func ParsePipe(filePath string) (pipeObj models.IPipe) {
+	//只解析pipeline和pipegroup
 	m := require(filePath)
 	// spew.Dump(m)
-	caseMap := _parseTestCase(m)
+	pipeMap := _parsePipe(m)
 	// log.Println(`*************************`)
 	// spew.Dump(m)
 	// spew.Dump(caseMap)
-	if len(caseMap) == 0 {
+	if len(pipeMap) == 0 {
 		return
 	}
-	caseObj = toObj(caseMap)
+	pipeObj = toObj(pipeMap)
 	spew.Dump(filePath)
 	return
 }
 
-func _parseTestCase(ts map[string]interface{}) (caseMap map[string]interface{}) {
-	if _, ok := ts[`stages`]; ok {
-		// testcase here
-		parseSingleCase(ts)
-
-	} else if _, ok := ts[`testcases`]; ok {
-		// testsuits here
-		for index, caseInfo := range ts[`testcases`].([]interface{}) {
-			caseInfo := caseInfo.(map[string]interface{})
-			for caseDesc, caseFile := range caseInfo {
-				m := require(caseFile.(string))
-				log.Println(`testsuit`)
-				oneCase := _parseTestCase(m) //递归解析用例集
-				//oneCase是一个测试集中一个用例的map
-				caseInfo[caseDesc] = oneCase
-			}
-			ts[`testcases`].([]interface{})[index] = caseInfo
-		}
-		// caseMap = ts
+func _parsePipe(pipeMap map[string]interface{}) map[string]interface{} {
+	if stages, ok := pipeMap[`stages`]; ok {
+		parsePipeline(pipeMap)
+	} else if pipelines, ok := pipeMap[`pipelines`]; ok {
+		parsePipeGroup(pipeMap)
 	}
-	caseMap = ts
-	return
+	return pipeMap
 }
 
-func parseSingleCase(ts map[string]interface{}) {
-	for index, stageItem := range ts[`stages`].([]interface{}) {
+func parsePipeline(pipeMap map[string]interface{}) {
+	//pipeline没有继承
+	for index, stage := range pipeMap[`stages`].([]interface{}) {
+		stage := stage.(map[string]interface{})
 		//处理stage的继承
+		mergeExtends(stage)
+		//处理step的继承
+		for stepIndex, step := range stage[`steps`].([]interface{}) {
+			step := step.(map[string]interface{})
+			mergeExtends(step)
+			stage[`steps`].([]interface{})[stepIndex] = step
+		}
+		// TODO 处理hook
+		pipeMap[`stages`].([]interface{})[index] = stage
+	}
 
-		stageItem := stageItem.(map[string]interface{})
-		// rawApi := require(stageItem[`extends`].(string))
-		baseStage := require(stageItem[`extends`].(string))
-		for key, val := range stageItem {
-			/*
-				替换规则：
-				非列表、map等结构直接替换
-				列表和map则进行合并处理
-			*/
-			// key := key.(string)
-			// if _, ok := rawApi[key]; ok {
-			//只替换存在的字段
-			log.Println(`merge `, key)
-			switch val.(type) {
-			case int, int8, int16, int32, int64, float32, float64, string, bool:
-				//直接替换
-				rawApi[key] = val
+}
+
+func parsePipeGroup(pipeMap map[string]interface{}) {
+	//pipegroup没有继承
+	for index, pipeline := range pipeMap[`pipelines`].([]interface{}) {
+		pipeline := pipeline.(map[string]interface{})
+		parsePipeline(pipeline)
+		pipeMap[`pipelines`].([]interface{})[index] = pipeline
+	}
+}
+
+func mergeExtends(class map[string]interface{}) {
+	if filePath, ok := class[`extends`]; ok {
+		baseClass := require(filePath.(string))
+		mergeExtends(baseClass)
+		for k, v := range class {
+			log.Println(`merge `, k)
+			switch v.(type) {
 			case []interface{}:
 				//合并列表
-				itemListPtr := rawApi[key].([]interface{}) // 方便引用
-				for _, ele := range val.([]interface{}) {
-					itemListPtr = append(itemListPtr, ele)
+				//stage的合并需要指定是头合并还是尾合并,默认是尾合并
+				var mergeMode string
+				if mergeMode, ok := class[`mergeMode`]; !ok {
+					mergeMode = `tail`
 				}
-				rawApi[key] = itemListPtr
-			case map[string]interface{}:
-				//合并map
-				if rawApi[key] == nil {
-					//api没有定义export
-					rawApi[key] = val.(map[string]interface{})
-				} else {
-					itemPtr := rawApi[key].(map[string]interface{})
-					for k, v := range val.(map[string]interface{}) {
-						itemPtr[k] = v
+				itemListPtr := baseClass[k].([]interface{}) // 方便引用
+				tmp := make([]interface{}, 0, len(itemListPtr)+len(v.([]interface{})))
+				for _, ele := range v.([]interface{}) {
+					if mergeMode == `tail` {
+						itemListPtr = append(itemListPtr, ele)
+					} else {
+						tmp = append(tmp, ele)
 					}
-					rawApi[key] = itemPtr //需要回写才能更新
+				}
+				if mergeMode != `tail` {
+					tmp = append(tmp, itemListPtr...)
+					baseClass[k] = tmp
+				} else {
+					baseClass[k] = itemListPtr
 				}
 
+			case map[string]interface{}:
+				//合并map
+				if baseClass[k] == nil {
+					//没有定义
+					baseClass[k] = v.(map[string]interface{})
+				} else {
+					itemPtr := baseClass[k].(map[string]interface{})
+					for sk, sv := range v.(map[string]interface{}) {
+						itemPtr[sk] = sv
+					}
+					baseClass[k] = itemPtr //需要回写才能更新
+				}
 			default:
-				log.Fatal(fmt.Sprintf(`_parseTestCase,unsupport type in case type:%T,val:%v`, val, val))
+				baseClass[k] = v
 			}
-			// }
 		}
-		//处理hook
-		rawApi[`beforeRequest`] = stageItem[`beforeRequest`]
-		rawApi[`afterResponse`] = stageItem[`afterResponse`]
-		// log.Println(`++++++++++++++++++++++++`)
-		// spew.Dump(rawApi)
-		// log.Println(`++++++++++++++++++++++++`)
-		ts[`apis`].([]interface{})[index] = rawApi
+		class = baseClass
 	}
+
 }
 
 func require(casePath string) map[string]interface{} {
@@ -131,6 +141,10 @@ func require(casePath string) map[string]interface{} {
 		log.Fatal("ReadFile error:", err)
 	}
 	raw := make(map[string]interface{})
+	raw = yaml.UnmarshalToMapStr(content)
+	if err != nil {
+		log.Fatal("parse yaml error:", err.Error())
+	}
 	switch filepath.Ext(casePath) {
 	case `.yaml`, `yml`:
 		raw = yaml.UnmarshalToMapStr(content)
@@ -148,35 +162,35 @@ func require(casePath string) map[string]interface{} {
 	return raw
 }
 
-func toObj(caseMap map[string]interface{}) models.ICaseObj {
-	var isTestSuits bool
-	if _, ok := caseMap[`testcases`]; ok {
-		isTestSuits = true
+func toObj(caseMap map[string]interface{}) models.IPipe {
+	var isPipeGroup bool
+	if _, ok := caseMap[`pipelines`]; ok {
+		isPipeGroup = true
 	}
 	config := &mapstructure.DecoderConfig{
 		TagName: "json",
 	}
-	if isTestSuits {
+	if isPipeGroup {
 		//用例集
-		var ts models.TestSuites
-		config.Result = &ts
+		var pg models.PipeGroup
+		config.Result = &pg
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
 			log.Panic(err.Error())
 		}
 		decoder.Decode(caseMap)
-		// spew.Dump(ts)
-		return &ts
+		// spew.Dump(pg)
+		return &pg
 	} else {
 		//单个用例
-		var tc models.TestCase
-		config.Result = &tc
+		var pl models.Pipeline
+		config.Result = &pl
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
 			log.Panic(err.Error())
 		}
 		decoder.Decode(caseMap)
-		return &tc
+		return &pl
 	}
-	return &models.TestCase{}
+	return &models.Pipeline{}
 }

@@ -1,0 +1,5 @@
+name: path
+attr: 
+	path: "{{$path}}"
+props: 
+	path: ~

@@ -3,15 +3,16 @@ package models
 
 import (
 	"fmt"
+	"regexp"
 )
 
 type PipeGroup struct {
 	Base
-	Pipelines []Pipeline `json:"Pipelines"  yaml:"Pipelines"`
+	Pipelines []Pipeline `json:"pipelines"  yaml:"pipelines"`
 }
 
 func (pg *PipeGroup) GetName() string {
-	return pg.Config.Name
+	return pg.Name
 }
 
 func (pg *PipeGroup) Json() string {
@@ -24,5 +25,12 @@ func (pg *PipeGroup) Json() string {
 }
 
 func (pg *PipeGroup) GetType() int {
-	return TYPE_TESTSUITS
+	return TYPE_PIPEGROUP
+}
+
+func (pg *PipeGroup) RefTag() string {
+	if pg.Ref == `` {
+		return regexp.MustCompile(`\s+`).ReplaceAllString(pg.Name, `_`)
+	}
+	return pg.Ref
 }

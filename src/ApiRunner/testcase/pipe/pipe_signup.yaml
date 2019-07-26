@@ -1,5 +1,6 @@
 name: sign up pipe as a testcase
 ref: signup_pipe
+host: http://depay.ixbow.com/
 repeat: 2
 export: 
   var1: will be output

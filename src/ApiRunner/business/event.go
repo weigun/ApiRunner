@@ -1,10 +1,6 @@
 // event.go
 package business
 
-import (
-	"fmt"
-)
-
 const (
 	EVT_RUNNING = iota
 	EVT_FINISHED

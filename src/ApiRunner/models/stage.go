@@ -1,20 +1,23 @@
 package models
 
 import (
+	"regexp"
 	// "encoding/json"
 	"fmt"
 )
 
 const (
-	TYPE_API = iota
-	TYPE_TESTCASE
-	TYPE_TESTSUITS
+	TYPE_STEP = iota
+	TYPE_STAGE
+	TYPE_PIPELINE
+	TYPE_PIPEGROUP
 )
 
-type ICaseObj interface {
+type IPipe interface {
 	GetName() string
 	Json() string
 	GetType() int
+	RefTag() string
 }
 
 type Stage struct {
@@ -28,7 +31,7 @@ type Stage struct {
 }
 
 func (st *Stage) GetName() string {
-	return st.Config.Name
+	return st.Name
 }
 
 func (st *Stage) Json() string {
@@ -41,5 +44,12 @@ func (st *Stage) Json() string {
 }
 
 func (st *Stage) GetType() int {
-	return TYPE_TESTCASE
+	return TYPE_STAGE
+}
+
+func (st *Stage) RefTag() string {
+	if st.Ref == `` {
+		return regexp.MustCompile(`\s+`).ReplaceAllString(st.Name, `_`)
+	}
+	return st.Ref
 }

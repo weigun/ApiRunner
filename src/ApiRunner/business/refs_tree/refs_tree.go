@@ -1,7 +1,7 @@
 package refs
 
 import (
-	"fmt"
+	// "fmt"
 
 	"ApiRunner/models"
 )
@@ -13,6 +13,7 @@ type Node interface {
 	ChildAt(int) *rnode
 	SetParent(*rnode)
 	AddChild(*rnode)
+	AddPairs(string, interface{})
 }
 
 type rnode struct {
@@ -27,7 +28,7 @@ func (n *rnode) Name() string {
 }
 
 func (n *rnode) Parent() *rnode {
-	return n.Parent
+	return n.parent
 }
 
 func (n *rnode) ValueOf(varName string) interface{} {
@@ -50,8 +51,13 @@ func (n *rnode) SetParent(parent *rnode) {
 
 func (n *rnode) AddChild(child *rnode) {
 	n.children = append(n.children, child)
+	child.SetParent(n)
+}
+
+func (n *rnode) AddPairs(key string, val interface{}) {
+	n.vars[key] = val
 }
 
 func New(name string) *rnode {
-	return &rnode{name: Name,vars: models.Variables{}}
+	return &rnode{name: name, vars: models.Variables{}}
 }

@@ -4,6 +4,7 @@ package models
 import (
 	// "encoding/json"
 	"fmt"
+	"regexp"
 	// "github.com/json-iterator/go"
 )
 
@@ -34,5 +35,12 @@ func (step *Step) Json() string {
 }
 
 func (step *Step) GetType() int {
-	return TYPE_API
+	return TYPE_STEP
+}
+
+func (step *Step) RefTag() string {
+	if step.Ref == `` {
+		return regexp.MustCompile(`\s+`).ReplaceAllString(step.Name, `_`)
+	}
+	return step.Ref
 }

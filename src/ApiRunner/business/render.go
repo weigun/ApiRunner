@@ -75,8 +75,8 @@ func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{
 	switch modelPtr.(type) {
 	case *models.CaseConfig:
 		return json.Unmarshal(objStr, modelPtr.(*models.CaseConfig))
-	case *models.ICaseObj:
-		return json.Unmarshal(objStr, modelPtr.(*models.ICaseObj))
+	case *models.IPipe:
+		return json.Unmarshal(objStr, modelPtr.(*models.IPipe))
 	// case *models.Params:
 	// return json.Unmarshal(objStr, modelPtr.(*models.Params))
 	// case *models.Variables:

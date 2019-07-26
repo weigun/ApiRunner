@@ -1,0 +1,8 @@
+name: headers
+attr: 
+	headers: 
+		Content-Type: "application/json"
+  		Authorization: "Bearer {{$token}}"
+
+props:
+  token: ~

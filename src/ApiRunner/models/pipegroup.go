@@ -1,6 +1,7 @@
 // pipegroup
 package models
 
+/*
 import (
 	"fmt"
 	"regexp"
@@ -34,3 +35,4 @@ func (pg *PipeGroup) RefTag() string {
 	}
 	return pg.Ref
 }
+*/

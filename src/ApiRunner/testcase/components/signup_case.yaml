@@ -1,5 +1,6 @@
 name: signup
 ref: signup
+api: \testcase\components\api.yaml
 
 props: 
   email: "{{gen_email}}"
@@ -7,5 +8,11 @@ props:
   password_confirmation: "{{$password}}"
   
 components: 
-  - signup-normal:
-      \components\
+  - name: signup-normal
+    ref: normal
+    props: 
+      email: "{{$email}}"
+    validate:
+      - op: eq
+        actual: "{{.StatusCode}}"
+        expected: 200

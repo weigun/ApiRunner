@@ -1,6 +1,7 @@
 // step.go
 package models
 
+/*
 import (
 	// "encoding/json"
 	"fmt"
@@ -44,3 +45,4 @@ func (step *Step) RefTag() string {
 	}
 	return step.Ref
 }
+*/

@@ -1,5 +1,6 @@
 package models
 
+/*
 import (
 	"regexp"
 	// "encoding/json"
@@ -53,3 +54,4 @@ func (st *Stage) RefTag() string {
 	}
 	return st.Ref
 }
+*/

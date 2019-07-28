@@ -1,6 +1,7 @@
 // pipeline
 package models
 
+/*
 import (
 	// "encoding/json"
 	"fmt"
@@ -38,3 +39,4 @@ func (pl *Pipeline) RefTag() string {
 	}
 	return pl.Ref
 }
+*/

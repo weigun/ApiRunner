@@ -9,7 +9,7 @@ import (
 type Pipeline struct {
 	// Require []string `json:"require"  yaml:"require"`
 	// Module Module     `json:"module"  yaml:"module"`
-	Name     string     `json:"name" yaml:"name" toml:"name"`
+	Name     string     `json:"name" yaml:"name"`
 	Host     string     `json:"host"  yaml:"host"`
 	Def      Variables  `json:"def"  yaml:"def"`
 	Steps    []ExecNode `json:"steps"  yaml:"steps"`

@@ -42,6 +42,7 @@ module:
 
   steps: # just like step by step when use debug
     - node: 
+        desc: signup a new account
         ref: signup
         exec: *signup
         args: &args

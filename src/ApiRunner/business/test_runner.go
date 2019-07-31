@@ -77,7 +77,7 @@ func (r *TestRunner) Stop() {
 
 func execute(r *TestRunner, report *models.Report) {
 	//具体执行用例的实体函数
-	pipeObj := r.PipeObj
+	pipeObj := r.PipeObj.(*models.Pipeline)
 
 	//顺序执行用例
 	//开始计时
@@ -85,14 +85,7 @@ func execute(r *TestRunner, report *models.Report) {
 	sum.StartAt = time.Now()
 	report.SetSummary(*sum)
 	render := newRenderer(r.ID)
-	_ = render
-	_type := pipeObj.GetType()
-	if _type == models.TYPE_PIPELINE {
-		pipeObj := r.PipeObj.(*models.Pipeline)
-		_ = pipeObj
-		// executePipeline(render, pipeObj, r, report)
-		// executeTestCase(render, pipeObj, r, report)
-	}
+	executePipeline(render, pipeObj, r, report)
 	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
 	//统计status
 	for _, dt := range report.Details {
@@ -113,34 +106,35 @@ func execute(r *TestRunner, report *models.Report) {
 	log.Println(report.Json())
 }
 
-/*
 func executePipeline(render *renderer, pipeObj *models.Pipeline, r *TestRunner, report *models.Report) {
 	requestor := NewRequestor()
 	detail := models.NewDetail()
 	detail.Title = pipeObj.Name
-	for index, stage := range pipeObj.Stages {
+
+	//将def变量同步到变量服务
+	log.Println(`render Variables`)
+	var localVars models.Variables
+	err := render.renderObj(utils.Map2Json(pipeObj.Def), true, &localVars)
+	if err != nil {
+		log.Println(`renderObj Variables error:`, err.Error())
+	}
+	for varName, varVal := range localVars {
+		services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
+		r.refs.AddPairs(varName, varVal)
+	}
+
+	for index, execNode := range pipeObj.Steps {
 		if r.Status == Cancel {
 			// 如果runner的已经取消了，就没必要再去执行下一个用例了
 			log.Println(`executor stopping,because runner is canceled `)
 			return
 		}
-		//将接口的局部变量同步到变量服务
-		log.Println(`render Variables`)
-		var localVars models.Variables
-		err := render.renderObj(utils.Map2Json(stage.Env), true, &localVars)
-		if err != nil {
-			log.Println(`renderObj Variables error:`, err.Error())
-		}
-		stage.Env = localVars
-		node := refNode.New(stage.RefTag())
+		node := refNode.New(execNode.RefTag())
 		r.refs.AddChild(node)
-		for varName, varVal := range stage.Env {
-			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
-			node.AddPairs(varName, varVal)
-		}
+		// TODO
 
 		//开始执行step
-		executeStage(render, &stage, r, report, index)
+		executeStage(render, &execNode, r, report, index)
 	}
 }
 
@@ -157,11 +151,11 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 		//将接口的局部变量同步到变量服务
 		// log.Println(`render Variables`)
 		// var localVars models.Variables
-		// err := render.renderObj(utils.Map2Json(stage.Env), true, &localVars)
+		// err := render.renderObj(utils.Map2Json(execNode.Env), true, &localVars)
 		// if err != nil {
 		// 	log.Println(`renderObj Variables error:`, err.Error())
 		// }
-		// stage.Env = localVars
+		// execNode.Env = localVars
 		node := refNode.New(step.RefTag())
 		ref.AddChild(node)
 		for varName, varVal := range step.Params {
@@ -169,7 +163,7 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 			node.AddPairs(varName, varVal)
 		}
 		//write to here,stop
-		url := fmt.Sprintf(`%s/%s`, render.renderValue(pipeObj.Host, true), render.renderValue(stage.Path, true))
+		url := fmt.Sprintf(`%s/%s`, render.renderValue(pipeObj.Host, true), render.renderValue(execNode.Path, true))
 		// TODO:
 		// 模板翻译-done
 		// 拦截器-done
@@ -181,26 +175,26 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 
 		record := models.NewRecord()
 
-		render.renderObj(toJson(stage.Headers), true, &header)
+		render.renderObj(toJson(execNode.Headers), true, &header)
 		var startTime time.Time
-		if stage.MultipartFile.IsEnabled() {
+		if execNode.MultipartFile.IsEnabled() {
 			var mpf models.MultipartFile
-			render.renderObj(stage.MultipartFile.Json(), true, &mpf)
+			render.renderObj(execNode.MultipartFile.Json(), true, &mpf)
 			req := requestor.BuildPostFiles(url, mpf, header)
 			record.Request = req
 			startTime = time.Now()
-			resp = requestor.doRequest(req, stage.BeforeRequest, stage.AfterResponse)
+			resp = requestor.doRequest(req, execNode.BeforeRequest, execNode.AfterResponse)
 		} else {
 			var params models.Params
-			render.renderObj(toJson(stage.Params), true, &params)
-			req := requestor.BuildRequest(url, render.renderValue(stage.Method, true), params, header)
+			render.renderObj(toJson(execNode.Params), true, &params)
+			req := requestor.BuildRequest(url, render.renderValue(execNode.Method, true), params, header)
 			record.Request = req
 			startTime = time.Now()
-			resp = requestor.doRequest(req, stage.BeforeRequest, stage.AfterResponse)
+			resp = requestor.doRequest(req, execNode.BeforeRequest, execNode.AfterResponse)
 		}
 		elapsed := time.Now().Sub(startTime).Nanoseconds()
 		log.Println(resp)
-		record.Desc = stage.Name
+		record.Desc = execNode.Name
 		record.Elapsed = elapsed / 1e6
 		record.Response = resp
 		data := make(map[string]interface{})
@@ -217,7 +211,7 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 			} else {
 				data[`body`] = contentMap
 			}
-			for ek, ev := range stage.Export {
+			for ek, ev := range execNode.Export {
 				v := ev.(string)
 				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
 					//返回json则需要提取变量
@@ -243,7 +237,7 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 
 		//比较结果
 		allPassed := true
-		for _, validator := range stage.Validate {
+		for _, validator := range execNode.Validate {
 			// TODO 渲染变量时，适配各种数据类型
 			validator.Check = validator.Actual.(string)
 			compare := getAssertByOp(validator.Op)
@@ -289,7 +283,7 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 	// 	services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
 	// }
 
-	for _, stage := range pipeObj.Stages {
+	for _, execNode := range pipeObj.Stages {
 		if r.Status == Cancel {
 			// 如果runner的已经取消了，就没必要再去执行下一个用例了
 			log.Println(`executor stopping,because runner is canceled `)
@@ -298,20 +292,20 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 		//将接口的局部变量同步到变量服务
 		log.Println(`render Variables`)
 		var localVars models.Variables
-		err := render.renderObj(utils.Map2Json(stage.Env), true, &localVars)
+		err := render.renderObj(utils.Map2Json(execNode.Env), true, &localVars)
 		if err != nil {
 			log.Println(`renderObj Variables error:`, err.Error())
 		}
-		stage.Env = localVars
-		node := refNode.New(stage.RefTag())
+		execNode.Env = localVars
+		node := refNode.New(execNode.RefTag())
 		node.SetParent(refs)
 		refs.AddChild(node)
-		for varName, varVal := range stage.Env {
+		for varName, varVal := range execNode.Env {
 			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
 			node.AddPairs(varName, varVal)
 		}
 
-		url := fmt.Sprintf(`%s/%s`, render.renderValue(pipeObj.Host, true), render.renderValue(stage.Path, true))
+		url := fmt.Sprintf(`%s/%s`, render.renderValue(pipeObj.Host, true), render.renderValue(execNode.Path, true))
 		// TODO:
 		// 模板翻译-done
 		// 拦截器-done
@@ -323,26 +317,26 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 
 		record := models.NewRecord()
 
-		render.renderObj(toJson(stage.Headers), true, &header)
+		render.renderObj(toJson(execNode.Headers), true, &header)
 		var startTime time.Time
-		if stage.MultipartFile.IsEnabled() {
+		if execNode.MultipartFile.IsEnabled() {
 			var mpf models.MultipartFile
-			render.renderObj(stage.MultipartFile.Json(), true, &mpf)
+			render.renderObj(execNode.MultipartFile.Json(), true, &mpf)
 			req := requestor.BuildPostFiles(url, mpf, header)
 			record.Request = req
 			startTime = time.Now()
-			resp = requestor.doRequest(req, stage.BeforeRequest, stage.AfterResponse)
+			resp = requestor.doRequest(req, execNode.BeforeRequest, execNode.AfterResponse)
 		} else {
 			var params models.Params
-			render.renderObj(toJson(stage.Params), true, &params)
-			req := requestor.BuildRequest(url, render.renderValue(stage.Method, true), params, header)
+			render.renderObj(toJson(execNode.Params), true, &params)
+			req := requestor.BuildRequest(url, render.renderValue(execNode.Method, true), params, header)
 			record.Request = req
 			startTime = time.Now()
-			resp = requestor.doRequest(req, stage.BeforeRequest, stage.AfterResponse)
+			resp = requestor.doRequest(req, execNode.BeforeRequest, execNode.AfterResponse)
 		}
 		elapsed := time.Now().Sub(startTime).Nanoseconds()
 		log.Println(resp)
-		record.Desc = stage.Name
+		record.Desc = execNode.Name
 		record.Elapsed = elapsed / 1e6
 		record.Response = resp
 		data := make(map[string]interface{})
@@ -359,7 +353,7 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 			} else {
 				data[`body`] = contentMap
 			}
-			for ek, ev := range stage.Export {
+			for ek, ev := range execNode.Export {
 				v := ev.(string)
 				if strings.Index(v, `{{`) != -1 && strings.Index(v, `}}`) != -1 {
 					//返回json则需要提取变量
@@ -385,7 +379,7 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 
 		//比较结果
 		allPassed := true
-		for _, validator := range stage.Validate {
+		for _, validator := range execNode.Validate {
 			// TODO 渲染变量时，适配各种数据类型
 			validator.Check = validator.Actual.(string)
 			compare := getAssertByOp(validator.Op)
@@ -412,4 +406,3 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 	}
 	report.AddDetail(*detail)
 }
-*/

@@ -4,16 +4,15 @@ package models
 import (
 	// "encoding/json"
 	"fmt"
-
-	"github.com/json-iterator/go"
+	// "github.com/json-iterator/go"
 )
 
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+// var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type API struct {
 	Name string `json:"name" yaml:"name" toml:"name"`
 	// Variables     Variables     `json:"variables" yaml:"variables" toml:"variables"`
-	Host          string        `json:"host"  yaml:"host" toml:"host"`
+	// Host          string        `json:"host"  yaml:"host" toml:"host"`
 	Path          string        `json:"path" yaml:"path" toml:"path"`
 	Method        string        `json:"method" yaml:"method" toml:"method"`
 	Headers       Header        `json:"headers,omitempty"  yaml:"headers" toml:"headers"`

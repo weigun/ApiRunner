@@ -10,18 +10,10 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-type Base struct {
-	Name   string    `json:"name" yaml:"name"`
-	Ref    string    `json:"ref" yaml:"ref"`
-	Repeat int       `json:"repeat" yaml:"repeat"`
-	Export Variables `json:"export"  yaml:"export" toml:"export"`
-}
-
-type Extend struct {
-	Extends string `json:"extends" yaml:"extends"`
-	Status  int    //passde or failed?
-	Retry   int    `json:"retry" yaml:"retry"`
-}
+const (
+	TYPE_API = iota
+	TYPE_PIPELINE
+)
 
 type Variables = map[string]interface{}
 
@@ -54,15 +46,14 @@ func (mf *MultipartFile) Json() string {
 	return string(jsonStr)
 }
 
-type callbacks = []string
+// type Module struct {
+// 	Host  string     `json:"host"  yaml:"host" toml:"host"`
+// 	Def   Variables  `json:"def"  yaml:"def"`
+// 	Steps []ExecNode `json:"steps"  yaml:"steps"`
+// }
 
-type Action struct {
-	onSuccess callbacks `json:"onSuccess"  yaml:"onSuccess"`
-	onFailure callbacks `json:"onFailure"  yaml:"onFailure"`
-}
-
-type StageAction struct {
-	Action
-	onStepFailure callbacks `json:"onStepFailure"  yaml:"onStepFailure"`
-	onStepSuccess callbacks `json:"onStepSuccess"  yaml:"onStepSuccess"`
+type Executable interface {
+	GetName() string
+	Json() string
+	GetType() int
 }

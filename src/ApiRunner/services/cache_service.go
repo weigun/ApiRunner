@@ -18,7 +18,7 @@ type CacheManager struct {
 
 const DefaultObjCacheKey = `ObjMgr`
 
-func (cm *CacheManager) CacheObj(obj models.IPipe) error {
+func (cm *CacheManager) CacheObj(obj models.Executable) error {
 	key := obj.GetName()
 	val := obj.Json()
 	key = fmt.Sprintf(`%s:%s`, DefaultObjCacheKey, key)
@@ -29,7 +29,7 @@ func (cm *CacheManager) CacheObj(obj models.IPipe) error {
 	return nil
 }
 
-func (cm *CacheManager) FromCache(key string) (obj models.IPipe, err error) {
+func (cm *CacheManager) FromCache(key string) (obj models.Executable, err error) {
 	key = fmt.Sprintf(`%s:%s`, DefaultObjCacheKey, key)
 	jsonVal := cm.cache.Get(key)
 	if jsonVal != `` {

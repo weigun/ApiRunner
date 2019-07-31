@@ -1,18 +1,131 @@
-name: signup
-ref: signup
-api: \testcase\components\api.yaml
+# name: signup
+# ref: signup
+# # api: \testcase\components\api.yaml
 
-props: 
-  email: "{{gen_email}}"
-  password: "{{gen_pwd}}"
-  password_confirmation: "{{$password}}"
+# props: 
+#   email: "{{gen_email}}"
+#   password: "{{gen_pwd}}"
+#   password_confirmation: "{{$password}}"
   
-components: 
-  - name: signup-normal
-    ref: normal
-    props: 
-      email: "{{$email}}"
-    validate:
-      - op: eq
-        actual: "{{.StatusCode}}"
-        expected: 200
+# components: 
+#   - name: signup-normal
+#     ref: normal
+#     props: 
+#       email: "{{$email}}"
+#     validate:
+#       - op: eq
+#         actual: "{{.StatusCode}}"
+#         expected: 200
+
+#   - name: signup-empty
+#     ref: empty
+#     props: 
+#       email: ""
+#     validate: 
+#       - op: eq
+#         actual: "{{.body.code}}"
+#         expected: 0
+
+
+# create user
+
+name: create_user
+require: 
+  - &signup \testcase\components\api.yaml
+  # - &login \testcase\components\login.yaml
+
+module: 
+  host: http://depay-test.ixbow.com/
+  def: #入参
+    email: ~
+    amount: 10000
+
+  steps: # just like step by step when use debug
+    - node: 
+        ref: signup
+        exec: *signup
+        args: &args
+          email: ${email}
+        validate: 
+          - op: eq
+            actual: "{{.body.code}}"
+            expected: 0
+        hooks: 
+          beforeRequest: encrypt
+          afterResponse: decrypt
+        retry: 3 #失败重试次数
+        repeat: 10  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
+
+
+    # - node:
+    #     ref: login
+    #     exec: *login
+    #     args: *args
+    #       # email: "{{$email}}"
+    #     export: 
+    #       token: "{{.body.token}}"
+
+    # parallel: 并行执行
+    #   - node: 
+    #       exec: signup
+    #       args: 
+    #         email: ${email}
+    #       hook: 
+    #         beforeRequest: encrypt
+    #         afterResponse: decrypt
+    #       retry: 3 #失败重试次数
+    #       repeat: 10  #该步骤重复执行多少次,如果有导出，只会导出最后一次的结果
+
+
+    #   - node: 
+    #     exec: login
+    #     args: 
+    #       email: "{{$email}}"
+    #     export: 
+    #       token: "{{.body.token}}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

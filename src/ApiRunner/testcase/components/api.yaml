@@ -1,5 +1,4 @@
 name: signup
-host: ~
 path: /api/signup
 method: POST
 headers: 

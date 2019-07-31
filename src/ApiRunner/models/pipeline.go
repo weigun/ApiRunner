@@ -1,19 +1,19 @@
 // pipeline
 package models
 
-/*
 import (
 	// "encoding/json"
 	"fmt"
-	"regexp"
 )
 
 type Pipeline struct {
-	Base
-	Host          string  `json:"host"  yaml:"host" toml:"host"`
-	Status        int     `json:"status"  yaml:"status"`
-	Stages        []Stage `json:"stages"  yaml:"stages"`
-	Notifications Action  `json:"notifications"  yaml:"notifications"`
+	// Require []string `json:"require"  yaml:"require"`
+	// Module Module     `json:"module"  yaml:"module"`
+	Name     string     `json:"name" yaml:"name" toml:"name"`
+	Host     string     `json:"host"  yaml:"host"`
+	Def      Variables  `json:"def"  yaml:"def"`
+	Steps    []ExecNode `json:"steps"  yaml:"steps"`
+	Parallel bool
 }
 
 func (pl *Pipeline) GetName() string {
@@ -32,11 +32,3 @@ func (pl *Pipeline) Json() string {
 func (pl *Pipeline) GetType() int {
 	return TYPE_PIPELINE
 }
-
-func (pl *Pipeline) RefTag() string {
-	if pl.Ref == `` {
-		return regexp.MustCompile(`\s+`).ReplaceAllString(pl.Name, `_`)
-	}
-	return pl.Ref
-}
-*/

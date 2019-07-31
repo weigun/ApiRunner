@@ -3,21 +3,21 @@ package business
 
 import (
 	"context"
-	"fmt"
-	_ "fmt"
+	// "fmt"
 	"log"
 	_ "net/url"
-	"regexp"
-	"strings"
+
+	// "regexp"
+	// "strings"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
 
 	refNode "ApiRunner/business/refs_tree"
 	"ApiRunner/models"
-	"ApiRunner/models/young"
-	"ApiRunner/services"
-	"ApiRunner/utils"
+	// "ApiRunner/models/young"
+	// "ApiRunner/services"
+	// "ApiRunner/utils"
 )
 
 const (
@@ -30,13 +30,13 @@ const (
 
 type TestRunner struct {
 	ID       string
-	PipeObj  models.IPipe
+	PipeObj  models.Executable
 	canceler context.CancelFunc
 	refs     refNode.Node
 	Status   int
 }
 
-func NewTestRunner(id string, pipeObj models.IPipe) *TestRunner {
+func NewTestRunner(id string, pipeObj models.Executable) *TestRunner {
 	return &TestRunner{
 		ID:      id,
 		PipeObj: pipeObj,
@@ -78,16 +78,6 @@ func (r *TestRunner) Stop() {
 func execute(r *TestRunner, report *models.Report) {
 	//具体执行用例的实体函数
 	pipeObj := r.PipeObj
-	switch r.PipeObj.(type) {
-	case *models.Pipeline:
-		// pipeObj = r.PipeObj.(*models.Pipeline)
-	case *models.PipeGroup:
-		// pipeObj = r.PipeObj.(*models.PipeGroup)
-	default:
-		log.Printf(`unknow caseobj type:%T,stop runner`, r.PipeObj)
-		r.canceler()
-		return
-	}
 
 	//顺序执行用例
 	//开始计时
@@ -95,29 +85,13 @@ func execute(r *TestRunner, report *models.Report) {
 	sum.StartAt = time.Now()
 	report.SetSummary(*sum)
 	render := newRenderer(r.ID)
+	_ = render
 	_type := pipeObj.GetType()
 	if _type == models.TYPE_PIPELINE {
 		pipeObj := r.PipeObj.(*models.Pipeline)
-		executePipeline(render, pipeObj, r, report)
+		_ = pipeObj
+		// executePipeline(render, pipeObj, r, report)
 		// executeTestCase(render, pipeObj, r, report)
-	} else {
-		pipeObj := r.PipeObj.(*models.PipeGroup)
-		// spew.Dump(pipeObj)
-		// var caseConf models.CaseConfig
-		// err := render.renderObj(pipeObj.Config.Json(), true, &caseConf)
-		// if err != nil {
-		// 	log.Println(`renderObj error:`, err.Error())
-		// 	return
-		// }
-		// pipeObj.Config = caseConf
-		//将全局变量同步到变量服务
-		// for varName, varVal := range pipeObj.Variables {
-		// 	services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
-		// }
-		for _, pipeline := range pipeObj.Pipelines {
-			log.Println(`executeTestCase:`, pipeline.Name)
-			executePipeline(render, &pipeline, r, report)
-		}
 	}
 	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
 	//统计status
@@ -139,6 +113,7 @@ func execute(r *TestRunner, report *models.Report) {
 	log.Println(report.Json())
 }
 
+/*
 func executePipeline(render *renderer, pipeObj *models.Pipeline, r *TestRunner, report *models.Report) {
 	requestor := NewRequestor()
 	detail := models.NewDetail()
@@ -437,3 +412,4 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 	}
 	report.AddDetail(*detail)
 }
+*/

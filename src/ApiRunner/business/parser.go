@@ -24,40 +24,74 @@ import (
 
 // var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-func ParsePipe(filePath string) (pipeObj models.IPipe) {
-	//只解析pipeline和pipegroup
+type strfacemap = map[string]interface{}
+
+func ParsePipe(filePath string) (pipeObj models.Executable) {
+	//只有pipeline才可以解析
 	m := require(filePath)
 	// spew.Dump(m)
-	pipeMap := _parsePipe(m)
+	pipeObj = _parsePipe(m)
 	// log.Println(`*************************`)
 	// spew.Dump(m)
-	// spew.Dump(caseMap)
-	if len(pipeMap) == 0 {
-		return
-	}
-	pipeObj = toObj(pipeMap)
+	spew.Dump(pipeObj)
 	spew.Dump(filePath)
 	return
 }
 
-func _parsePipe(pipeMap map[string]interface{}) map[string]interface{} {
-	if stages, ok := pipeMap[`stages`]; ok {
-		parsePipeline(pipeMap)
-	} else if pipelines, ok := pipeMap[`pipelines`]; ok {
-		parsePipeGroup(pipeMap)
+func _parsePipe(pipeMap strfacemap) *models.Pipeline {
+	var pipeObj models.Pipeline
+	pipeObj.Name = pipeMap[`name`].(string)
+	if host, ok := pipeMap[`host`].(string); ok {
+		pipeObj.Host = host
 	}
-	return pipeMap
+	module := pipeMap[`module`].(strfacemap)
+	pipeObj.Def = module[`def`].(models.Variables)
+	nodes := []interface{}{}
+	if _, ok := module[`parallel`]; ok {
+		pipeObj.Parallel = true
+		nodes = module[`parallel`].([]interface{})
+	} else {
+		nodes = module[`steps`].([]interface{})
+	}
+	config := &mapstructure.DecoderConfig{
+		TagName: "json",
+	}
+	for _, node := range nodes {
+		node := node.(strfacemap)[`node`].(strfacemap)
+		var nodeObj models.ExecNode
+		config.Result = &nodeObj
+		decoder, err := mapstructure.NewDecoder(config)
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		decoder.Decode(node)
+
+		m := require(node[`exec`].(string))
+		if _, ok := m[`module`]; ok {
+			var out models.Pipeline
+			mustToObj(m, &out)
+			nodeObj.Exec = models.Executable(&out)
+		} else {
+			var out models.API
+			mustToObj(m, &out)
+			nodeObj.Exec = models.Executable(&out)
+		}
+
+		pipeObj.Steps = append(pipeObj.Steps, nodeObj)
+	}
+	return &pipeObj
 }
 
-func parsePipeline(pipeMap map[string]interface{}) {
+/*
+func parsePipeline(pipeMap strfacemap) {
 	//pipeline没有继承
 	for index, stage := range pipeMap[`stages`].([]interface{}) {
-		stage := stage.(map[string]interface{})
+		stage := stage.(strfacemap)
 		//处理stage的继承
 		mergeExtends(stage)
 		//处理step的继承
 		for stepIndex, step := range stage[`steps`].([]interface{}) {
-			step := step.(map[string]interface{})
+			step := step.(strfacemap)
 			mergeExtends(step)
 			stage[`steps`].([]interface{})[stepIndex] = step
 		}
@@ -67,16 +101,16 @@ func parsePipeline(pipeMap map[string]interface{}) {
 
 }
 
-func parsePipeGroup(pipeMap map[string]interface{}) {
+func parsePipeGroup(pipeMap strfacemap) {
 	//pipegroup没有继承
 	for index, pipeline := range pipeMap[`pipelines`].([]interface{}) {
-		pipeline := pipeline.(map[string]interface{})
+		pipeline := pipeline.(strfacemap)
 		parsePipeline(pipeline)
 		pipeMap[`pipelines`].([]interface{})[index] = pipeline
 	}
 }
 
-func mergeExtends(class map[string]interface{}) {
+func mergeExtends(class strfacemap) {
 	if filePath, ok := class[`extends`]; ok {
 		baseClass := require(filePath.(string))
 		mergeExtends(baseClass)
@@ -106,14 +140,14 @@ func mergeExtends(class map[string]interface{}) {
 					baseClass[k] = itemListPtr
 				}
 
-			case map[string]interface{}:
+			case strfacemap:
 				//合并map
 				if baseClass[k] == nil {
 					//没有定义
-					baseClass[k] = v.(map[string]interface{})
+					baseClass[k] = v.(strfacemap)
 				} else {
-					itemPtr := baseClass[k].(map[string]interface{})
-					for sk, sv := range v.(map[string]interface{}) {
+					itemPtr := baseClass[k].(strfacemap)
+					for sk, sv := range v.(strfacemap) {
 						itemPtr[sk] = sv
 					}
 					baseClass[k] = itemPtr //需要回写才能更新
@@ -126,8 +160,8 @@ func mergeExtends(class map[string]interface{}) {
 	}
 
 }
-
-func require(casePath string) map[string]interface{} {
+*/
+func require(casePath string) strfacemap {
 
 	// 将依赖的用例或者接口包含进当前用例
 
@@ -140,7 +174,7 @@ func require(casePath string) map[string]interface{} {
 	if err != nil {
 		log.Fatal("ReadFile error:", err)
 	}
-	raw := make(map[string]interface{})
+	raw := make(strfacemap)
 	raw = yaml.UnmarshalToMapStr(content)
 	if err != nil {
 		log.Fatal("parse yaml error:", err.Error())
@@ -162,35 +196,14 @@ func require(casePath string) map[string]interface{} {
 	return raw
 }
 
-func toObj(caseMap map[string]interface{}) models.IPipe {
-	var isPipeGroup bool
-	if _, ok := caseMap[`pipelines`]; ok {
-		isPipeGroup = true
-	}
+func mustToObj(in strfacemap, out interface{}) {
 	config := &mapstructure.DecoderConfig{
 		TagName: "json",
 	}
-	if isPipeGroup {
-		//用例集
-		var pg models.PipeGroup
-		config.Result = &pg
-		decoder, err := mapstructure.NewDecoder(config)
-		if err != nil {
-			log.Panic(err.Error())
-		}
-		decoder.Decode(caseMap)
-		// spew.Dump(pg)
-		return &pg
-	} else {
-		//单个用例
-		var pl models.Pipeline
-		config.Result = &pl
-		decoder, err := mapstructure.NewDecoder(config)
-		if err != nil {
-			log.Panic(err.Error())
-		}
-		decoder.Decode(caseMap)
-		return &pl
+	config.Result = out
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		log.Panic(err.Error())
 	}
-	return &models.Pipeline{}
+	decoder.Decode(in)
 }

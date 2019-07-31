@@ -73,10 +73,8 @@ func (r *renderer) render(source string, renderVars bool) []byte {
 func (r *renderer) renderObj(source string, renderVars bool, modelPtr interface{}) error {
 	objStr := r.render(source, renderVars)
 	switch modelPtr.(type) {
-	case *models.CaseConfig:
-		return json.Unmarshal(objStr, modelPtr.(*models.CaseConfig))
-	case *models.IPipe:
-		return json.Unmarshal(objStr, modelPtr.(*models.IPipe))
+	case *models.Executable:
+		return json.Unmarshal(objStr, modelPtr.(*models.Executable))
 	// case *models.Params:
 	// return json.Unmarshal(objStr, modelPtr.(*models.Params))
 	// case *models.Variables:

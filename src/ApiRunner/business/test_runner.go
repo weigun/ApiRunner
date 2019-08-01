@@ -3,21 +3,21 @@ package business
 
 import (
 	"context"
-	// "fmt"
+	"fmt"
 	"log"
 	_ "net/url"
 
-	// "regexp"
-	// "strings"
+	"regexp"
+	"strings"
 	"time"
 
 	// "github.com/davecgh/go-spew/spew"
 
 	refNode "ApiRunner/business/refs_tree"
 	"ApiRunner/models"
-	// "ApiRunner/models/young"
-	// "ApiRunner/services"
-	// "ApiRunner/utils"
+	"ApiRunner/models/young"
+	"ApiRunner/services"
+	"ApiRunner/utils"
 )
 
 const (
@@ -107,9 +107,6 @@ func execute(r *TestRunner, report *models.Report) {
 }
 
 func executePipeline(render *renderer, pipeObj *models.Pipeline, r *TestRunner, report *models.Report) {
-	requestor := NewRequestor()
-	detail := models.NewDetail()
-	detail.Title = pipeObj.Name
 
 	//将def变量同步到变量服务
 	log.Println(`render Variables`)
@@ -131,70 +128,54 @@ func executePipeline(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 		}
 		node := refNode.New(execNode.RefTag())
 		r.refs.AddChild(node)
-		// TODO
-
 		//开始执行step
-		executeStage(render, &execNode, r, report, index)
+		executeStep(render, &execNode, r, report, index)
 	}
 }
 
-func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, report *models.Report, rindex int) {
+func executeStep(render *renderer, execNode *models.ExecNode, r *TestRunner, report *models.Report, rindex int) {
+	pipeObj := r.PipeObj.(*models.Pipeline)
 	requestor := NewRequestor()
 	ref := r.refs.ChildAt(rindex)
+	detail := models.NewDetail()
+	detail.Title = pipeObj.Name
+	if execNode.Host == `` {
+		execNode.Host = pipeObj.Host
+	}
+	url := fmt.Sprintf(`%s/%s`, execNode.Host, execNode.Host)
+	// TODO:
+	// 模板翻译-done
+	// 拦截器-done
+	// MultipartFile-done
 
-	for _, step := range stageObj.Steps {
-		if r.Status == Cancel {
-			// 如果runner的已经取消了，就没必要再去执行下一个用例了
-			log.Println(`executor stopping,because runner is canceled `)
-			return
-		}
-		//将接口的局部变量同步到变量服务
-		// log.Println(`render Variables`)
-		// var localVars models.Variables
-		// err := render.renderObj(utils.Map2Json(execNode.Env), true, &localVars)
-		// if err != nil {
-		// 	log.Println(`renderObj Variables error:`, err.Error())
-		// }
-		// execNode.Env = localVars
-		node := refNode.New(step.RefTag())
-		ref.AddChild(node)
-		for varName, varVal := range step.Params {
-			services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, varName), varVal)
-			node.AddPairs(varName, varVal)
-		}
-		//write to here,stop
-		url := fmt.Sprintf(`%s/%s`, render.renderValue(pipeObj.Host, true), render.renderValue(execNode.Path, true))
-		// TODO:
-		// 模板翻译-done
-		// 拦截器-done
-		// MultipartFile-done
+	//MultipartFile比普通post请求优先级要高
+	var header models.Header
+	var resp *young.Response
 
-		//MultipartFile比普通post请求优先级要高
-		var header models.Header
-		var resp *young.Response
-
-		record := models.NewRecord()
-
-		render.renderObj(toJson(execNode.Headers), true, &header)
+	record := models.NewRecord()
+	if execNode.Exec.GetType() == models.TYPE_API {
+		//只是执行接口
+		apiObj := execNode.Exec.(*models.API)
+		render.renderObj(toJson(apiObj.Headers), true, &header)
 		var startTime time.Time
-		if execNode.MultipartFile.IsEnabled() {
+		if apiObj.MultipartFile.IsEnabled() {
 			var mpf models.MultipartFile
-			render.renderObj(execNode.MultipartFile.Json(), true, &mpf)
+			render.renderObj(apiObj.MultipartFile.Json(), true, &mpf)
 			req := requestor.BuildPostFiles(url, mpf, header)
 			record.Request = req
 			startTime = time.Now()
-			resp = requestor.doRequest(req, execNode.BeforeRequest, execNode.AfterResponse)
+			resp = requestor.doRequest(req, execNode.Hooks[`BeforeRequest`].(string), execNode.Hooks[`AfterResponse`].(string))
 		} else {
 			var params models.Params
-			render.renderObj(toJson(execNode.Params), true, &params)
-			req := requestor.BuildRequest(url, render.renderValue(execNode.Method, true), params, header)
+			render.renderObj(toJson(apiObj.Params), true, &params)
+			req := requestor.BuildRequest(url, render.renderValue(apiObj.Method, true), params, header)
 			record.Request = req
 			startTime = time.Now()
-			resp = requestor.doRequest(req, execNode.BeforeRequest, execNode.AfterResponse)
+			resp = requestor.doRequest(req, execNode.Hooks[`BeforeRequest`].(string), execNode.Hooks[`AfterResponse`].(string))
 		}
 		elapsed := time.Now().Sub(startTime).Nanoseconds()
 		log.Println(resp)
-		record.Desc = execNode.Name
+		record.Desc = execNode.Desc
 		record.Elapsed = elapsed / 1e6
 		record.Response = resp
 		data := make(map[string]interface{})
@@ -219,6 +200,7 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 					// data[`body`] = contentMap
 					bindVal := render.renderWithData(v, data)
 					services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), bindVal)
+					ref.AddPairs(ek, bindVal)
 					log.Println("add ExportVars:", render.tag, ek, bindVal)
 				} else {
 					//plain text
@@ -228,6 +210,7 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 					if match != nil {
 						//目前暂不支持切片，如果是匹配多个值，只能是先合拼，到需要用的时候，自己再转换成字符串切片
 						services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
+						ref.AddPairs(ek, strings.Join(match, `,`))
 						// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
 						log.Println("add ExportVars:", render.tag, ek, strings.Join(match, `,`))
 					}
@@ -262,9 +245,11 @@ func executeStage(render *renderer, stageObj *models.Stage, r *TestRunner, repor
 		detail.AddRecord(*record)
 		detail.Status.Count(record.Stat)
 	}
+
 	report.AddDetail(*detail)
 }
 
+/*
 func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, report *models.Report) {
 	// spew.Dump(pipeObj)
 	requestor := NewRequestor()
@@ -406,3 +391,4 @@ func executeTestCase(render *renderer, pipeObj *models.Pipeline, r *TestRunner, 
 	}
 	report.AddDetail(*detail)
 }
+*/

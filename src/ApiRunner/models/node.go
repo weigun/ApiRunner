@@ -19,8 +19,8 @@ type ExecNode struct {
 }
 
 func (exec *ExecNode) RefTag() string {
-	if ExecNode.Ref == `` {
-		return regexp.MustCompile(`\s+`).ReplaceAllString(ExecNode.Name, `_`)
+	if exec.Ref == `` {
+		return regexp.MustCompile(`\s+`).ReplaceAllString(exec.Desc, `_`)
 	}
-	return ExecNode.Ref
+	return exec.Ref
 }

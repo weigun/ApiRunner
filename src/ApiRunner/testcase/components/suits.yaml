@@ -1,25 +1,19 @@
-name: create_user
+name: suits
 require: 
-  - &signup \testcase\components\api.yaml
-  - &login \testcase\components\api.yaml
+  - &create_user \testcase\components\signup_case.yaml
 
 module: 
   host: http://depay-test.ixbow.com/
   def: #入参
     email: "{{gen_email}}"
-    amount: 10000
 
   steps: # just like step by step when use debug
     - node: 
-        desc: signup a new account
-        ref: signup
-        exec: *signup
+        desc: new user a
+        ref: user1
+        exec: *create_user
         args: &args
           email: "{{$email}}"
-        validate: 
-          - op: eq
-            actual: "{{.body.code}}"
-            expected: 0
         hooks: 
           beforeRequest: encrypt
           afterResponse: decrypt
@@ -27,23 +21,16 @@ module:
         repeat: 10  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
 
     - node: 
-        desc: new user login
-        ref: login
-        exec: *login
-        args: 
-          email: "{{gen_email}}"
-        export: 
-          ret_email: "{{.body.email}}"
-        validate: 
-          - op: eq
-            actual: "{{.body.code}}"
-            expected: 0
+        desc: new user b
+        ref: user2
+        exec: *create_user
+        args: &args
+          email: "{{$refs.user1.ret_email}}"
         hooks: 
           beforeRequest: encrypt
           afterResponse: decrypt
         retry: 3 #失败重试次数
         repeat: 10  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
-
 
 
 

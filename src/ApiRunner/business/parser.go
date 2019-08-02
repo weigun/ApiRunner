@@ -41,10 +41,10 @@ func ParsePipe(filePath string) (pipeObj models.Executable) {
 func _parsePipe(pipeMap strfacemap) *models.Pipeline {
 	var pipeObj models.Pipeline
 	pipeObj.Name = pipeMap[`name`].(string)
-	if host, ok := pipeMap[`host`].(string); ok {
+	module := pipeMap[`module`].(strfacemap)
+	if host, ok := module[`host`].(string); ok {
 		pipeObj.Host = host
 	}
-	module := pipeMap[`module`].(strfacemap)
 	pipeObj.Def = module[`def`].(models.Variables)
 	nodes := []interface{}{}
 	if _, ok := module[`parallel`]; ok {
@@ -68,9 +68,9 @@ func _parsePipe(pipeMap strfacemap) *models.Pipeline {
 
 		m := require(node[`exec`].(string))
 		if _, ok := m[`module`]; ok {
-			var out models.Pipeline
-			mustToObj(m, &out)
-			nodeObj.Exec = models.Executable(&out)
+			var out *models.Pipeline
+			out = _parsePipe(m)
+			nodeObj.Exec = models.Executable(out)
 		} else {
 			var out models.API
 			mustToObj(m, &out)

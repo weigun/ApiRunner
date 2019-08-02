@@ -29,7 +29,7 @@ func main() {
 		runner2.Start()
 		time.Sleep(1000 * time.Second)
 	*/
-	pipObj := business.ParsePipe(`testcase\components\signup_case.yaml`)
+	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)
 	runner.Start()
 	time.Sleep(10 * time.Second)

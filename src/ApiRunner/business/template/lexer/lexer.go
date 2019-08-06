@@ -13,6 +13,7 @@ const (
 	RIGHT_PAREN string = `)`
 	COMMA string = `,`
 	DOT string = `.`
+	DOLLAR string `$`
 	NEWLINE string = "\n"
 )
 

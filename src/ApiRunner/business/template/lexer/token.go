@@ -6,8 +6,9 @@ ${email}  //var
 ${gen_email()}  //function
 ${gen_email(4,12)}  //function with args
 ${gen_email($min,$max)}  //function with args
+${gen_email(4,$max)}  //function with mixed
 ${refs.user1.email}  //function with args
-has ${num} items
+has ${num} items,${num2} records
 */
 type Token struct {
 	Typ TokenType
@@ -32,5 +33,6 @@ const (
 	TokenRightParen
 	TokenField
 	TokenDot
+	TokenDollar
 	TokenText //just text,no var and func. e.g,has ${num} items-has,items
 )

@@ -16,8 +16,8 @@ type Token struct {
 	Val string
 }
 
-type TokenType int
-type Pos int
+type TokenType = int
+type Pos = int
 
 const (
 	TokenError TokenType = iota

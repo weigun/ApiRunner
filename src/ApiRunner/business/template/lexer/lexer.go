@@ -1,23 +1,24 @@
 package lexer
 
 import (
+	"fmt"
 	"unicode"
 	"unicode/utf8"
 )
 
 const (
-	EOF = -1
-	LEFT_DLIM string = "${"
-	RIGHT_DLIM string = "}"
-	LEFT_PAREN string = `(`
+	EOF                = -1
+	LEFT_DLIM   string = "${"
+	RIGHT_DLIM  string = "}"
+	LEFT_PAREN  string = `(`
 	RIGHT_PAREN string = `)`
-	COMMA string = `,`
-	DOT string = `.`
-	DOLLAR string `$`
-	NEWLINE string = "\n"
+	COMMA       string = `,`
+	DOT         string = `.`
+	DOLLAR      string = `$`
+	NEWLINE     string = "\n"
 )
 
-type stateFn func(*lexer) stateFn
+type stateFn func(*Lexer) stateFn
 
 type Lexer struct {
 	Name   string
@@ -58,10 +59,10 @@ func (l *Lexer) Dec() {
 }
 
 func (l *Lexer) Inc() {
-    l.Pos++
-    if l.Pos >= utf8.RuneCountInString(l.Input) {
-        l.Emit(TokenEOF)
-    }
+	l.Pos++
+	if l.Pos >= utf8.RuneCountInString(l.Input) {
+		l.Emit(TokenEOF)
+	}
 }
 
 func (l *Lexer) Emit(tokenTyp TokenType) {
@@ -107,20 +108,20 @@ func (l *Lexer) Peek() rune {
 }
 
 func (l *Lexer) Run() {
-	for state := LexBegin;state != nil{
+	for state := LexBegin; state != nil; {
 		state = state(l)
 	}
 	close(l.Tokens)
 }
 
-func (l *Lexer)SkipSpace() {
-	for{
+func (l *Lexer) SkipSpace() {
+	for {
 		r := l.Next()
-		if !unicode.IsSpace(r){
+		if !unicode.IsSpace(r) {
 			l.Dec()
 			break
 		}
-		if r == TokenEOF{
+		if int(r) == TokenEOF {
 			l.Emit(TokenEOF)
 			break
 		}

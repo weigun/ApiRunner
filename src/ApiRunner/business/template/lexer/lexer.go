@@ -21,12 +21,14 @@ const (
 type stateFn func(*Lexer) stateFn
 
 type Lexer struct {
-	Name   string
-	Input  string
-	Tokens chan Token
-	Start  Pos //start position of this token
-	Pos    Pos // current position in the input
-	Width  Pos //width of last rune read from input
+	Name    string
+	Input   string
+	Tokens  chan Token
+	Start   Pos //start position of this token
+	Pos     Pos // current position in the input
+	Width   Pos //width of last rune read from input
+	FnStart Pos //函数起始瞄点
+	// FnEnd   Pos //函数结束瞄点
 }
 
 func (l *Lexer) Next() rune {
@@ -52,6 +54,10 @@ func (l *Lexer) Backup() {
 
 func (l *Lexer) CurrebInput() string {
 	return l.Input[l.Start:l.Pos]
+}
+
+func (l *Lexer) CurrebFnArgs() string {
+	return l.Input[l.FnStart+1 : l.Pos-1]
 }
 
 func (l *Lexer) Dec() {

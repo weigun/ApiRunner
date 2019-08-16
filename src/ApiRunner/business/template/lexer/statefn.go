@@ -8,30 +8,33 @@ import (
 /*
 ${email}  //var
 ${gen_email()}  //function
+${gen_email(4)}  //function with one args
 ${gen_email(4,12)}  //function with args
 ${gen_email($min,$max)}  //function with args
 ${gen_email(4,$max)}  //function with mixed
 ${refs.user1.email}  //function with args
-has ${num} items,${num2} records
+has ${getnum()} items,${num2} records
 has num items,num2 .{[(}records
+ 	//null
 */
 func LexBegin(l *Lexer) stateFn {
 	l.SkipSpace()
 
-	if strings.HasPrefix(l.InputToEnd(), LEFT_DLIM) {
-		return LexLeftDelim
-	} else {
-		return LexText
+	for {
+		if l.IsEOF() {
+			//reached eof
+			l.Pos += Pos(len(l.Input))
+			l.Emit(TokenEOF)
+			return nil
+		}
+		if strings.HasPrefix(l.InputToEnd(), LEFT_DLIM) {
+			return LexLeftDelim
+		}
+		l.Inc()
 	}
 }
 
 func LexText(l *Lexer) stateFn {
-	if x := strings.Index(l.InputToEnd(), LEFT_DLIM); x >= 0 {
-		//如果存在起止符，则将pos设置到起止符处,并且跳转到LexLeftDelim
-		l.Pos += Pos(x)
-		l.Ignore()
-		return LexLeftDelim
-	}
 	for {
 		if strings.HasPrefix(l.InputToEnd(), RIGHT_DLIM) {
 			//should var
@@ -40,11 +43,49 @@ func LexText(l *Lexer) stateFn {
 		} else if strings.HasPrefix(l.InputToEnd(), LEFT_PAREN) {
 			//function
 			l.Emit(TokenFuncName)
-			return LexFuncName
-		} else if strings.HasPrefix(l.InputToEnd(), DOLLAR) {
+			return LexLeftParen
+		} else if strings.HasPrefix(l.InputToEnd(), DOT) {
 			//refs
 			l.Emit(TokenField)
-			return LexField
+			return LexDot
+		} else if strings.HasPrefix(l.InputToEnd(), RIGHT_PAREN) {
+			// param end
+			// 需要判断有无参数
+			tmpPos := l.Pos
+			paramsStr := l.CurrebFnArgs() //(),(4),(4,12) etc
+			if paramsStr == `` {
+				//无参数
+				return LexRightParen
+			}
+			params := strings.Split(paramsStr, COMMA) //分割参数
+			if len(params) == 1 {
+				//1个参数
+				//判断是明文参数还是变量参数
+				if strings.Index(params[0], DOLLAR) == -1 {
+					//明文参数
+					// l.Pos += len(params[0]) + 1
+					l.Emit(TokenRawParam)
+				} else {
+					//变量参数
+					l.Emit(TokenVarParam)
+				}
+				return LexRightParen
+			} else {
+				//多个参数
+				for _, v := range params {
+					l.Pos = l.Start + 1 + len(v)
+					//判断是明文参数还是变量参数
+					if strings.Index(v, DOLLAR) == -1 {
+						//明文参数
+						l.Emit(TokenRawParam)
+					} else {
+						//变量参数
+						l.Emit(TokenVarParam)
+					}
+				}
+				l.Pos = tmpPos //还原位置
+				return LexRightParen
+			}
 		}
 		l.Inc()
 	}
@@ -79,7 +120,7 @@ func LexText(l *Lexer) stateFn {
 func LexLeftDelim(l *Lexer) stateFn {
 	l.Pos += Pos(len(LEFT_DLIM))
 	l.Emit(TokenLeftDelim)
-	subInput := l.InputToEnd()
+	// subInput := l.InputToEnd()
 	return LexText
 	/*
 		// l.Ignore()
@@ -155,6 +196,7 @@ func LexFuncName(l *Lexer) stateFn {
 }
 
 func LexLeftParen(l *Lexer) stateFn {
+	l.FnStart = l.Pos
 	l.Pos += Pos(len(LEFT_PAREN))
 	l.Emit(TokenLeftParen)
 	return LexText
@@ -163,6 +205,7 @@ func LexLeftParen(l *Lexer) stateFn {
 func LexRightParen(l *Lexer) stateFn {
 	l.Pos += Pos(len((RIGHT_PAREN)))
 	l.Emit(TokenRightParen) //emit wrong
+	return LexRightDelim
 }
 
 func LexRawParam(l *Lexer) stateFn {

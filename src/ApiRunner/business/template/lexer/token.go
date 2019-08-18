@@ -34,5 +34,5 @@ const (
 	TokenField
 	TokenDot
 	TokenDollar
-	TokenText //just text,no var and func. e.g,has ${num} items-has,items
+	TokenText //raw text
 )

@@ -133,3 +133,11 @@ func (l *Lexer) SkipSpace() {
 		}
 	}
 }
+
+func NewLexer(name, input string) *Lexer {
+	return &Lexer{
+		Name:   name,
+		Input:  input,
+		Tokens: make(chan Token, 3),
+	}
+}

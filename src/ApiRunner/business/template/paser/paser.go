@@ -1,8 +1,10 @@
 package paser
 
 import (
+	"errors"
 	"fmt"
-	"strings"
+
+	// "strings"
 
 	"ApiRunner/business/template/lexer"
 )
@@ -14,7 +16,7 @@ func isEOF(token lexer.Token) bool {
 type Bucket struct {
 	Fields [][]string //二维数组来存放所有的refs
 	Vars   []string
-	funcs  []map[string]interface{} //interface as params
+	Funcs  []map[string]interface{} //interface as params
 
 }
 
@@ -30,18 +32,19 @@ has ${getnum()} items,${num2} records
 has num items,num2 .{[(}records
  	//null
 */
-func Parse(input string) (string, error) {
+func Parse(input string) (*Bucket, error) {
+	//TODO 优化：递归分散成函数?
 	l := lexer.NewLexer(`test`, input)
 	bucketPtr := &Bucket{}
 	fieldNode := []string{} //refs.user1.email分别存放refs user email
-	funcNode := make(map[string]interface{})
+	funcNode := map[string]interface{}{}
 	var preTokenType lexer.TokenType
 	for {
 		_token := l.NextToken()
 		switch _token.Typ {
 		case lexer.TokenError:
 			//error
-			return input, _token.Val
+			return bucketPtr, errors.New(_token.Val)
 		case lexer.TokenEOF:
 			//reach inputend
 			// TODO
@@ -58,6 +61,13 @@ func Parse(input string) (string, error) {
 				fields = append(fields, fieldNode)
 				bucketPtr.Fields = fields
 				fieldNode = []string{} //reset
+			case lexer.TokenRawParam, lexer.TokenVarParam:
+				//应该是带参数的函数调用
+				funcs := bucketPtr.Funcs
+				funcs = append(funcs, funcNode) //funcNode=[print]{1,2,3}
+				bucketPtr.Funcs = funcs
+				funcNode = map[string]interface{}{}
+
 			default:
 				fmt.Println(`not handle token `, _token)
 			}
@@ -67,13 +77,14 @@ func Parse(input string) (string, error) {
 			bucketPtr.Vars = append(bucketPtr.Vars, _token.Val)
 		case lexer.TokenFuncName:
 			//function
-			funcNode[_token.Val] = []string{}
-		case lexer.TokenRawParam:
+			funcNode[_token.Val] = []interface{}{}
+		case lexer.TokenRawParam, lexer.TokenVarParam:
 			//function params
 			if len(funcNode) != 1 {
 				panic(`more than one func in one token`)
 			}
 			for k, v := range funcNode {
+				v := v.([]interface{})
 				v = append(v, _token.Val)
 				funcNode[k] = v
 				break
@@ -81,6 +92,6 @@ func Parse(input string) (string, error) {
 			//here
 		}
 		preTokenType = _token.Typ
-
 	}
+	return bucketPtr, nil
 }

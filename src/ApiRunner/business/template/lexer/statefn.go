@@ -46,6 +46,12 @@ func LexText(l *Lexer) stateFn {
 			return LexLeftParen
 		} else if strings.HasPrefix(l.InputToEnd(), DOT) {
 			//refs
+			//先检查字段名是否合法
+			fieldName := l.CurrebInput()
+			if !isVarNameVerified(fieldName) {
+				//违反了命名规则
+				return l.Errorf(`field can only consist of alphanumeric and underscores and must start with a letter`)
+			}
 			l.Emit(TokenField)
 			return LexDot
 		} else if strings.HasPrefix(l.InputToEnd(), RIGHT_PAREN) {
@@ -89,28 +95,6 @@ func LexText(l *Lexer) stateFn {
 		}
 		l.Inc()
 	}
-	/*
-		else if x := strings.Index(l.InputToEnd(), RIGHT_PAREN); x >= 0 {
-			/*
-				如果是前文是(，则应该找到)，没找到应该跳到eof
-				如果找到，则开始找函数参数了，有4种情况：
-				1.无参数
-				2.只有明文参数
-				3.只有变量参数
-				4.混合参数
-			* /
-			if strings.HasPrefix(l.InputToEnd(), RIGHT_PAREN) {
-				//无参数的情况
-				return LexRightParen
-			} else if strings.HasPrefix(l.InputToEnd(), DOLLAR) {
-				//变量参数
-				l.Ignore() //忽略$
-				return LexDollar
-			} else {
-				//明文参数
-				return LexRawParam
-			}
-		}*/
 	//如果没有找到起止符，则应该要结束了，没必要进行下去
 	l.Pos += Pos(len(l.Input))
 	l.Emit(TokenEOF)
@@ -120,22 +104,7 @@ func LexText(l *Lexer) stateFn {
 func LexLeftDelim(l *Lexer) stateFn {
 	l.Pos += Pos(len(LEFT_DLIM))
 	l.Emit(TokenLeftDelim)
-	// subInput := l.InputToEnd()
 	return LexText
-	/*
-		// l.Ignore()
-		//TODO 这里可能有问题，如果input是has ${num} items,${get_records()} records
-		if strings.Index(subInput, LEFT_PAREN) != -1 {
-			//如果含有(，那么只能是纯函数调用(并且只有一个函数)，不能混合其他，函数参数除外
-			return LexFuncName
-		} else if strings.Index(subInput, DOT) != -1 {
-			//如果含有.，那么只能是引用树的调用了，函数参数不支持引用树
-			return TokenField
-		} else {
-			//只剩下变量了
-			return LexVariable
-		}
-	*/
 }
 
 func LexVariable(l *Lexer) stateFn {
@@ -246,6 +215,12 @@ func LexRawParam(l *Lexer) stateFn {
 			l.Inc()
 		}
 	}
+}
+
+func LexDot(l *Lexer) stateFn {
+	l.Pos += Pos(len((DOT)))
+	l.Emit(TokenDot)
+	return LexText
 }
 
 // ---------------------------

@@ -135,9 +135,11 @@ func (l *Lexer) SkipSpace() {
 }
 
 func NewLexer(name, input string) *Lexer {
-	return &Lexer{
+	l := &Lexer{
 		Name:   name,
 		Input:  input,
 		Tokens: make(chan Token, 3),
 	}
+	go l.Run()
+	return l
 }

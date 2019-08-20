@@ -23,7 +23,7 @@ func LexBegin(l *Lexer) stateFn {
 	for {
 		if l.IsEOF() {
 			//reached eof
-			l.Pos += Pos(len(l.Input))
+			// l.Pos += Pos(len(l.Input))
 			l.Emit(TokenEOF)
 			return nil
 		}
@@ -37,6 +37,7 @@ func LexBegin(l *Lexer) stateFn {
 func LexText(l *Lexer) stateFn {
 	for {
 		if strings.HasPrefix(l.InputToEnd(), RIGHT_DLIM) {
+			//TODO 应该要加上当前模式的判定
 			//should var
 			l.Emit(TokenVariable)
 			return LexRightDelim
@@ -111,7 +112,7 @@ func LexVariable(l *Lexer) stateFn {
 	// ${email}  //var
 	if l.IsEOF() {
 		//reached eof
-		l.Pos += Pos(len(l.Input))
+		// l.Pos += Pos(len(l.Input))
 		l.Emit(TokenEOF)
 		return nil
 	}
@@ -142,7 +143,7 @@ func LexFuncName(l *Lexer) stateFn {
 	// ${gen_email()}  //function
 	if l.IsEOF() {
 		//reached eof
-		l.Pos += Pos(len(l.Input))
+		// l.Pos += Pos(len(l.Input))
 		l.Emit(TokenEOF)
 		return nil
 	}

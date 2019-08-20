@@ -17,7 +17,6 @@ type Bucket struct {
 	Fields [][]string //二维数组来存放所有的refs
 	Vars   []string
 	Funcs  []map[string]interface{} //interface as params
-
 }
 
 /*
@@ -89,7 +88,8 @@ func Parse(input string) (*Bucket, error) {
 				funcNode[k] = v
 				break
 			}
-			//here
+		default:
+			fmt.Println(`ignore token `, _token)
 		}
 		preTokenType = _token.Typ
 	}

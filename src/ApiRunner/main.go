@@ -4,12 +4,14 @@ import (
 	"ApiRunner/business"
 	// "ApiRunner/utils"
 
-	// "fmt"
+	"fmt"
 
 	// "ApiRunner/services"
 	// "path/filepath"
+	"ApiRunner/business/template/parser"
 	"time"
-	// "github.com/davecgh/go-spew/spew"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
@@ -29,6 +31,10 @@ func main() {
 		runner2.Start()
 		time.Sleep(1000 * time.Second)
 	*/
+	input := `${refs.user1.email}`
+	o, _ := parser.Parse(input)
+	spew.Dump(o)
+	time.Sleep(1000 * time.Second)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)
 	runner.Start()

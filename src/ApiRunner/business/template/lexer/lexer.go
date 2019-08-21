@@ -18,17 +18,24 @@ const (
 	NEWLINE     string = "\n"
 )
 
+const (
+	ACTION_FUNC = iota + 1000
+	ACTION_VAR
+	ACTION_REFS
+	// ACTION_NONE
+)
+
 type stateFn func(*Lexer) stateFn
 
 type Lexer struct {
-	Name    string
-	Input   string
-	Tokens  chan Token
-	Start   Pos //start position of this token
-	Pos     Pos // current position in the input
-	Width   Pos //width of last rune read from input
-	FnStart Pos //函数起始瞄点
-	// FnEnd   Pos //函数结束瞄点
+	Name     string
+	Input    string
+	Tokens   chan Token
+	Start    Pos //start position of this token
+	Pos      Pos // current position in the input
+	Width    Pos //width of last rune read from input
+	FnStart  Pos //函数起始瞄点
+	InAction int //记录当前解析中的模式，如函数，还是变量还是引用树
 }
 
 func (l *Lexer) Next() rune {
@@ -136,9 +143,10 @@ func (l *Lexer) SkipSpace() {
 
 func NewLexer(name, input string) *Lexer {
 	l := &Lexer{
-		Name:   name,
-		Input:  input,
-		Tokens: make(chan Token, 3),
+		Name:     name,
+		Input:    input,
+		Tokens:   make(chan Token, 3),
+		InAction: ACTION_VAR,
 	}
 	go l.Run()
 	return l

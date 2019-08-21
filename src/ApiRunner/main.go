@@ -31,7 +31,7 @@ func main() {
 		runner2.Start()
 		time.Sleep(1000 * time.Second)
 	*/
-	input := `${refs.user1.email}`
+	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old`
 	o, _ := parser.Parse(input)
 	spew.Dump(o)
 	time.Sleep(1000 * time.Second)

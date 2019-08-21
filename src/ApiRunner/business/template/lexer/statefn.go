@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	// "fmt"
 	"strings"
 	"unicode"
 )
@@ -19,7 +20,7 @@ has num items,num2 .{[(}records
 */
 func LexBegin(l *Lexer) stateFn {
 	l.SkipSpace()
-
+	l.InAction = ACTION_VAR
 	for {
 		if l.IsEOF() {
 			//reached eof
@@ -38,11 +39,19 @@ func LexText(l *Lexer) stateFn {
 	for {
 		if strings.HasPrefix(l.InputToEnd(), RIGHT_DLIM) {
 			//TODO 应该要加上当前模式的判定
-			//should var
-			l.Emit(TokenVariable)
+			switch l.InAction {
+			case ACTION_REFS:
+				l.Emit(TokenField)
+			case ACTION_FUNC:
+				// 无需处理
+			default:
+				l.Emit(TokenVariable)
+			}
 			return LexRightDelim
+
 		} else if strings.HasPrefix(l.InputToEnd(), LEFT_PAREN) {
 			//function
+			l.InAction = ACTION_FUNC
 			l.Emit(TokenFuncName)
 			return LexLeftParen
 		} else if strings.HasPrefix(l.InputToEnd(), DOT) {
@@ -53,6 +62,7 @@ func LexText(l *Lexer) stateFn {
 				//违反了命名规则
 				return l.Errorf(`field can only consist of alphanumeric and underscores and must start with a letter`)
 			}
+			l.InAction = ACTION_REFS
 			l.Emit(TokenField)
 			return LexDot
 		} else if strings.HasPrefix(l.InputToEnd(), RIGHT_PAREN) {

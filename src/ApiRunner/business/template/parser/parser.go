@@ -60,8 +60,9 @@ func Parse(input string) (*Bucket, error) {
 				fields = append(fields, fieldNode)
 				bucketPtr.Fields = fields
 				fieldNode = []string{} //reset
-			case lexer.TokenRawParam, lexer.TokenVarParam:
+			case lexer.TokenRightParen: //lexer.TokenRawParam, lexer.TokenVarParam:
 				//应该是带参数的函数调用
+				fmt.Println(`should enter`)
 				funcs := bucketPtr.Funcs
 				funcs = append(funcs, funcNode) //funcNode=[print]{1,2,3}
 				bucketPtr.Funcs = funcs
@@ -76,9 +77,11 @@ func Parse(input string) (*Bucket, error) {
 			bucketPtr.Vars = append(bucketPtr.Vars, _token.Val)
 		case lexer.TokenFuncName:
 			//function
+			fmt.Println(`TokenFuncName `, _token.Val)
 			funcNode[_token.Val] = []interface{}{}
 		case lexer.TokenRawParam, lexer.TokenVarParam:
 			//function params
+			fmt.Println(`params `, _token.Val)
 			if len(funcNode) != 1 {
 				panic(`more than one func in one token`)
 			}
@@ -88,6 +91,7 @@ func Parse(input string) (*Bucket, error) {
 				funcNode[k] = v
 				break
 			}
+			fmt.Println(funcNode)
 		default:
 			fmt.Println(`ignore token `, _token)
 		}

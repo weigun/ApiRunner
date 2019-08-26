@@ -9,10 +9,6 @@ import (
 	"ApiRunner/business/template/lexer"
 )
 
-func isEOF(token lexer.Token) bool {
-	return token.Typ == lexer.TokenEOF
-}
-
 type Bucket struct {
 	Fields [][]string //二维数组来存放所有的refs
 	Vars   []string
@@ -31,9 +27,49 @@ has ${getnum()} items,${num2} records
 has num items,num2 .{[(}records
  	//null
 */
+type Tree struct {
+	lex      *lexer.Lexer
+	fields   [][]string //二维数组来存放所有的refs
+	vars     []string
+	funcs    []map[string]interface{} //interface as params
+	preToken *lexer.Token
+}
+
+func (t *Tree) init(input string) {
+	if t.lex == nil {
+		t.lex = lexer.NewLexer(input)
+	}
+}
+
+func (t *Tree) Parse(input string) {
+	t.init(input)
+	for state := startParse; state != nil; {
+		state = state(t)
+	}
+}
+
+func (t *Tree)() {
+	
+}
+
+type parseFn func(*Tree) parseFn
+
+func startParse(t *Tree) parseFn {
+	_token = t.lex.NextToken()
+	switch _token.Typ{
+	case lexer.TokenError:
+		return parseError
+	case lexer.TokenEOF:
+		return parseEOF
+	default:
+		fmt.Errorf(`aaaa`)
+	}
+}
+
 func Parse(input string) (*Bucket, error) {
 	//TODO 优化：递归分散成函数?
-	l := lexer.NewLexer(`test`, input)
+	//这里是解析的入口函数
+	l := lexer.NewLexer(input)
 	bucketPtr := &Bucket{}
 	fieldNode := []string{} //refs.user1.email分别存放refs user email
 	funcNode := map[string]interface{}{}

@@ -28,7 +28,7 @@ const (
 type stateFn func(*Lexer) stateFn
 
 type Lexer struct {
-	Name     string
+	// Name     string
 	Input    string
 	Tokens   chan Token
 	Start    Pos //start position of this token
@@ -141,9 +141,9 @@ func (l *Lexer) SkipSpace() {
 	}
 }
 
-func NewLexer(name, input string) *Lexer {
+func NewLexer(input string) *Lexer {
 	l := &Lexer{
-		Name:     name,
+		// Name:     name,
 		Input:    input,
 		Tokens:   make(chan Token, 3),
 		InAction: ACTION_VAR,

@@ -33,6 +33,7 @@ type Tree struct {
 	vars     []string
 	funcs    []map[string]interface{} //interface as params
 	preToken *lexer.Token
+	curToken *lexer.Token
 }
 
 func (t *Tree) init(input string) {
@@ -48,22 +49,34 @@ func (t *Tree) Parse(input string) {
 	}
 }
 
-func (t *Tree)() {
-	
+func (t *Tree) getToken() *lexer.Token {
+	token := t.lex.NextToken()
+	t.preToken = t.curToken
+	t.curToken = &token
+	return &token
 }
+
+// func (t *Tree)() {
+
+// }
 
 type parseFn func(*Tree) parseFn
 
 func startParse(t *Tree) parseFn {
-	_token = t.lex.NextToken()
-	switch _token.Typ{
+	_token = t.getToken()
+	switch _token.Typ {
 	case lexer.TokenError:
 		return parseError
 	case lexer.TokenEOF:
 		return parseEOF
 	default:
-		fmt.Errorf(`aaaa`)
+		//must be 3 of 1,when begin
+		return parseLeftDelim
 	}
+}
+
+func parseLeftDelim(t *Tree) parseFn {
+	t.ignore()
 }
 
 func Parse(input string) (*Bucket, error) {

@@ -1,19 +1,13 @@
 package parser
 
 import (
-	"errors"
+	// "errors"
 	"fmt"
 
 	// "strings"
 
 	"ApiRunner/business/template/lexer"
 )
-
-type Bucket struct {
-	Fields [][]string //二维数组来存放所有的refs
-	Vars   []string
-	Funcs  []map[string]interface{} //interface as params
-}
 
 /*
 ${email}  //var
@@ -56,14 +50,14 @@ func (t *Tree) getToken() *lexer.Token {
 	return &token
 }
 
-// func (t *Tree)() {
-
-// }
+func (t *Tree) ignore() {
+	t.getToken()
+}
 
 type parseFn func(*Tree) parseFn
 
 func startParse(t *Tree) parseFn {
-	_token = t.getToken()
+	_token := t.getToken()
 	switch _token.Typ {
 	case lexer.TokenError:
 		return parseError
@@ -77,8 +71,91 @@ func startParse(t *Tree) parseFn {
 
 func parseLeftDelim(t *Tree) parseFn {
 	t.ignore()
+	return parseToken
 }
 
+func parseToken(t *Tree) parseFn {
+	switch t.curToken.Typ {
+	case lexer.TokenField:
+		return parseField
+	case lexer.TokenVariable:
+		return parseVariable
+	case lexer.TokenFuncName:
+		return parseFuncName
+	case lexer.TokenRawParam, lexer.TokenVarParam:
+		return parseParams
+	case lexer.TokenRightDelim:
+		return parseRightDelim
+	default:
+		fmt.Println(`ignore token `, t.curToken)
+		t.ignore()
+		return parseToken
+	}
+}
+
+func parseField(t *Tree) parseFn {
+	index := len(t.fields)
+	t.fields[index] = append(t.fields[index], t.curToken.Val)
+	t.getToken()
+	return parseToken
+}
+
+func parseVariable(t *Tree) parseFn {
+	t.vars = append(t.vars, t.curToken.Val)
+	t.getToken()
+	return parseToken
+}
+
+func parseFuncName(t *Tree) parseFn {
+	// funcNode[_token.Val] = []interface{}{}
+	index := len(t.funcs)
+	m := t.funcs[index]
+	m[t.curToken.Val] = []interface{}{}
+	t.funcs[index] = m
+	t.getToken()
+	return parseToken
+}
+
+func parseParams(t *Tree) parseFn {
+	index := len(t.funcs)
+	m := t.funcs[index]
+	for k, v := range m {
+		v := v.([]interface{})
+		v = append(v, t.curToken.Val)
+		m[k] = v
+		break
+	}
+	t.funcs[index] = m
+	t.getToken()
+	return parseToken
+}
+
+func parseRightDelim(t *Tree) parseFn {
+	//一次循环结束
+	switch t.preToken.Typ {
+	case lexer.TokenField:
+		t.fields = append(t.fields, []string{}) //插入一个新的，下一轮循环使用
+	case lexer.TokenRightParen:
+		//带参数的函数调用
+		t.funcs = append(t.funcs, map[string]interface{}{})
+	default:
+		fmt.Println(`not handle token `, t.preToken)
+	}
+	t.ignore()
+	return parseToken
+}
+
+func parseError(t *Tree) parseFn {
+	fmt.Print(t.curToken.Val)
+	return nil
+}
+
+func parseEOF(t *Tree) parseFn {
+	fmt.Print(t.curToken.Val)
+	return nil
+}
+
+/*
 func Parse(input string) (*Bucket, error) {
 	//TODO 优化：递归分散成函数?
 	//这里是解析的入口函数
@@ -148,3 +225,4 @@ func Parse(input string) (*Bucket, error) {
 	}
 	return bucketPtr, nil
 }
+*/

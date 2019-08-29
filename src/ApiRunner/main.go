@@ -32,8 +32,10 @@ func main() {
 		time.Sleep(1000 * time.Second)
 	*/
 	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old`
-	o, _ := parser.Parse(input)
-	spew.Dump(o)
+	// o, _ := parser.Parse(input)
+	t := parser.Tree{}
+	t.Parse(input)
+	spew.Dump(t)
 	time.Sleep(1000 * time.Second)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)

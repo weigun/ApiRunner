@@ -33,6 +33,8 @@ type Tree struct {
 func (t *Tree) init(input string) {
 	if t.lex == nil {
 		t.lex = lexer.NewLexer(input)
+		t.fields = append(t.fields, []string{})
+		t.funcs = append(t.funcs, map[string]interface{}{})
 	}
 }
 
@@ -47,6 +49,7 @@ func (t *Tree) getToken() *lexer.Token {
 	token := t.lex.NextToken()
 	t.preToken = t.curToken
 	t.curToken = &token
+	fmt.Println(`got token:`, token.Typ, token.Val)
 	return &token
 }
 
@@ -94,7 +97,8 @@ func parseToken(t *Tree) parseFn {
 }
 
 func parseField(t *Tree) parseFn {
-	index := len(t.fields)
+	index := len(t.fields) - 1
+	fmt.Println(`parseField index:`, index)
 	t.fields[index] = append(t.fields[index], t.curToken.Val)
 	t.getToken()
 	return parseToken
@@ -108,7 +112,7 @@ func parseVariable(t *Tree) parseFn {
 
 func parseFuncName(t *Tree) parseFn {
 	// funcNode[_token.Val] = []interface{}{}
-	index := len(t.funcs)
+	index := len(t.funcs) - 1
 	m := t.funcs[index]
 	m[t.curToken.Val] = []interface{}{}
 	t.funcs[index] = m
@@ -117,7 +121,7 @@ func parseFuncName(t *Tree) parseFn {
 }
 
 func parseParams(t *Tree) parseFn {
-	index := len(t.funcs)
+	index := len(t.funcs) - 1
 	m := t.funcs[index]
 	for k, v := range m {
 		v := v.([]interface{})
@@ -141,13 +145,11 @@ func parseRightDelim(t *Tree) parseFn {
 	default:
 		fmt.Println(`not handle token `, t.preToken)
 	}
-	t.ignore()
-	return parseToken
+	return startParse
 }
 
 func parseError(t *Tree) parseFn {
-	fmt.Print(t.curToken.Val)
-	return nil
+	return parseEOF
 }
 
 func parseEOF(t *Tree) parseFn {

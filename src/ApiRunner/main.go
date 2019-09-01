@@ -8,7 +8,8 @@ import (
 
 	// "ApiRunner/services"
 	// "path/filepath"
-	"ApiRunner/business/template/parser"
+	"ApiRunner/business/template"
+	_ "ApiRunner/business/template/parser"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -32,8 +33,7 @@ func main() {
 		time.Sleep(1000 * time.Second)
 	*/
 	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old`
-	// o, _ := parser.Parse(input)
-	t := parser.Tree{}
+	t := template.New()
 	t.Parse(input)
 	spew.Dump(t)
 	time.Sleep(1000 * time.Second)

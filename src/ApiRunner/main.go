@@ -15,6 +15,15 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+func get_luckly_from_name(name string) int {
+	switch name {
+	case `weigun`:
+		return 666
+	default:
+		return 233
+	}
+}
+
 func main() {
 	// initGlobalComponents()
 	// bootstrap()
@@ -32,8 +41,10 @@ func main() {
 		runner2.Start()
 		time.Sleep(1000 * time.Second)
 	*/
+	fnMap := make(template.FuncMap)
+	fnMap[`get_luckly_from_name`] = get_luckly_from_name
 	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old`
-	t := template.New()
+	t := template.New().Funcs(fnMap)
 	t.Parse(input)
 	spew.Dump(t)
 	time.Sleep(1000 * time.Second)

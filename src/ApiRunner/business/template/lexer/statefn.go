@@ -19,7 +19,7 @@ has num items,num2 .{[(}records
  	//null
 */
 func LexBegin(l *Lexer) stateFn {
-	l.SkipSpace()
+	// l.SkipSpace()
 	l.InAction = ACTION_VAR
 	for {
 		if l.IsEOF() {
@@ -29,6 +29,7 @@ func LexBegin(l *Lexer) stateFn {
 			return nil
 		}
 		if strings.HasPrefix(l.InputToEnd(), LEFT_DLIM) {
+			l.Emit(TokenText)
 			return LexLeftDelim
 		}
 		l.Inc()
@@ -42,7 +43,7 @@ func LexText(l *Lexer) stateFn {
 			switch l.InAction {
 			case ACTION_REFS:
 				l.Emit(TokenField)
-			case ACTION_FUNC:
+			case ACTION_FUNC, ACTION_RAW_TEXT:
 				// 无需处理
 			default:
 				l.Emit(TokenVariable)

@@ -22,7 +22,7 @@ const (
 	ACTION_FUNC = iota + 1000
 	ACTION_VAR
 	ACTION_REFS
-	// ACTION_NONE
+	ACTION_RAW_TEXT
 )
 
 type stateFn func(*Lexer) stateFn

@@ -28,6 +28,7 @@ type Tree struct {
 	funcs    []map[string]interface{} //interface as params
 	preToken *lexer.Token
 	curToken *lexer.Token
+	
 }
 
 func (t *Tree) init(input string) {

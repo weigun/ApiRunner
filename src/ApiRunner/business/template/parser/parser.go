@@ -28,7 +28,7 @@ type Tree struct {
 	funcs    []map[string]interface{} //interface as params
 	preToken *lexer.Token
 	curToken *lexer.Token
-	
+	nodeList []Node
 }
 
 func (t *Tree) init(input string) {
@@ -36,6 +36,7 @@ func (t *Tree) init(input string) {
 		t.lex = lexer.NewLexer(input)
 		t.fields = append(t.fields, []string{})
 		t.funcs = append(t.funcs, map[string]interface{}{})
+		// t.nodeList = []Node{}
 	}
 }
 
@@ -54,6 +55,44 @@ func (t *Tree) getToken() *lexer.Token {
 	return &token
 }
 
+func (t *Tree) addNode(n Node) {
+	switch n.Type() {
+	case lexer.TokenField:
+		nodeIndex := len(t.nodeList) - 1
+		for nodeIndex >= 0 {
+			preNodeTyp := t.nodeList[nodeIndex].Type()
+			if preNodeTyp == n.Type() {
+				//直至找到祖先节点
+				nodeIndex--
+				continue
+			} else {
+				if t.nodeList[nodeIndex+1] == nil {
+					//目前没有祖先节点,则直接加入
+					t.nodeList = append(t.nodeList, n)
+				} else {
+					//找到祖先节点
+					obj := t.nodeList[nodeIndex+1].(*fieldNode)
+					obj.expand(n)
+					break
+				}
+			}
+		}
+	case lexer.TokenFuncName:
+		t.nodeList = append(t.nodeList, n)
+	case lexer.TokenRawParam, lexer.TokenVarParam:
+		nodeIndex := len(t.nodeList) - 1
+		for nodeIndex >= 0 {
+			preNodeTyp := t.nodeList[nodeIndex].Type()
+			if preNodeTyp == lexer.TokenFuncName {
+				obj := t.nodeList[nodeIndex].(*funcNode)
+				obj.expand(n)
+				break
+			}
+			nodeIndex--
+		}
+	}
+}
+
 func (t *Tree) ignore() {
 	t.getToken()
 }
@@ -67,6 +106,10 @@ func startParse(t *Tree) parseFn {
 		return parseError
 	case lexer.TokenEOF:
 		return parseEOF
+	case lexer.TokenText:
+		textNodeObj := &textNode{_token}
+		t.addNode(textNodeObj)
+		return startParse
 	default:
 		//must be 3 of 1,when begin
 		return parseLeftDelim
@@ -100,6 +143,8 @@ func parseToken(t *Tree) parseFn {
 func parseField(t *Tree) parseFn {
 	index := len(t.fields) - 1
 	fmt.Println(`parseField index:`, index)
+	fieldNodeObj := &fieldNode{t.curToken, []Node{}}
+	t.addNode(fieldNodeObj)
 	t.fields[index] = append(t.fields[index], t.curToken.Val)
 	t.getToken()
 	return parseToken

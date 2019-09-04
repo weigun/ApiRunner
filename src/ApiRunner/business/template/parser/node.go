@@ -27,7 +27,7 @@ func (n *textNode) String() string {
 
 type fieldNode struct {
 	*lexer.Token
-	subNodes []*lexer.Token
+	subNodes []Node
 }
 
 func (n *fieldNode) Type() int {
@@ -38,15 +38,15 @@ func (n *fieldNode) String() string {
 	return ``
 }
 
-func (n *fieldNode) expand(t *lexer.Token) {
-	if t.Typ == lexer.TokenField {
+func (n *fieldNode) expand(t Node) {
+	if t.Type() == lexer.TokenField {
 		n.subNodes = append(n.subNodes, t)
 	}
 }
 
 type funcNode struct {
 	*lexer.Token
-	subNodes []*lexer.Token
+	subNodes []Node
 }
 
 func (n *funcNode) Type() int {
@@ -57,11 +57,23 @@ func (n *funcNode) String() string {
 	return ``
 }
 
-func (n *funcNode) expand(t *lexer.Token) {
-	switch t.Typ {
+func (n *funcNode) expand(t Node) {
+	switch t.Type() {
 	case lexer.TokenRawParam, lexer.TokenVarParam:
 		n.subNodes = append(n.subNodes, t)
 	default:
 		fmt.Println(`can not accept token:`, t)
 	}
+}
+
+type paramNode struct {
+	*lexer.Token
+}
+
+func (n *paramNode) Type() int {
+	return n.Typ
+}
+
+func (n *paramNode) String() string {
+	return ``
 }

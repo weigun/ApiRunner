@@ -2,7 +2,7 @@ package parser
 
 import (
 	// "errors"
-	// "fmt"
+	"fmt"
 	// "strings"
 	"ApiRunner/business/template/lexer"
 )
@@ -35,9 +35,33 @@ func (n *fieldNode) Type() int {
 }
 
 func (n *fieldNode) String() string {
-
+	return ``
 }
 
 func (n *fieldNode) expand(t *lexer.Token) {
-	n.subNodes = append(n.subNodes, t)
+	if t.Typ == lexer.TokenField {
+		n.subNodes = append(n.subNodes, t)
+	}
+}
+
+type funcNode struct {
+	*lexer.Token
+	subNodes []*lexer.Token
+}
+
+func (n *funcNode) Type() int {
+	return n.Typ
+}
+
+func (n *funcNode) String() string {
+	return ``
+}
+
+func (n *funcNode) expand(t *lexer.Token) {
+	switch t.Typ {
+	case lexer.TokenRawParam, lexer.TokenVarParam:
+		n.subNodes = append(n.subNodes, t)
+	default:
+		fmt.Println(`can not accept token:`, t)
+	}
 }

@@ -31,6 +31,10 @@ type Tree struct {
 	nodeList []Node
 }
 
+func (t *Tree) GetNodeList() []Node {
+	return t.nodeList
+}
+
 func (t *Tree) init(input string) {
 	if t.lex == nil {
 		t.lex = lexer.NewLexer(input)
@@ -59,24 +63,39 @@ func (t *Tree) addNode(n Node) {
 	switch n.Type() {
 	case lexer.TokenField:
 		nodeIndex := len(t.nodeList) - 1
-		for nodeIndex >= 0 {
+		if nodeIndex < 0 {
+			//first token
+			tn := n.(*fieldNode)
+			tn.expand(n)
+			t.nodeList = append(t.nodeList, tn)
+		} else {
+			// 前面已经有node时，分2种情况：
+			// 1.首个field node
+			// 2.非首个field node
+			// for nodeIndex >= 0 {
 			preNodeTyp := t.nodeList[nodeIndex].Type()
-			if preNodeTyp == n.Type() {
-				//直至找到祖先节点
-				nodeIndex--
-				continue
+			if preNodeTyp != n.Type() {
+				// 首个field node
+				// t.nodeList = append(t.nodeList, n)
+				tn := n.(*fieldNode)
+				tn.expand(n)
+				t.nodeList = append(t.nodeList, tn)
 			} else {
-				if t.nodeList[nodeIndex+1] == nil {
-					//目前没有祖先节点,则直接加入
-					t.nodeList = append(t.nodeList, n)
-				} else {
-					//找到祖先节点
-					obj := t.nodeList[nodeIndex+1].(*fieldNode)
-					obj.expand(n)
-					break
+				// 非首个field node
+				nodeIndex--
+				for nodeIndex >= 0 {
+					preNodeTyp = t.nodeList[nodeIndex].Type()
+					if preNodeTyp != n.Type() {
+						//当前nodeIndex + 1 就是祖先了
+						ancestor := t.nodeList[nodeIndex+1].(*fieldNode)
+						ancestor.expand(n)
+						break
+					}
+					nodeIndex--
 				}
 			}
 		}
+
 	case lexer.TokenFuncName:
 		t.nodeList = append(t.nodeList, n)
 	case lexer.TokenRawParam, lexer.TokenVarParam:
@@ -90,6 +109,8 @@ func (t *Tree) addNode(n Node) {
 			}
 			nodeIndex--
 		}
+	default:
+		t.nodeList = append(t.nodeList, n)
 	}
 }
 

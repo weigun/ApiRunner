@@ -35,7 +35,10 @@ func (n *fieldNode) Type() int {
 }
 
 func (n *fieldNode) String() string {
-	return ``
+	for i, sn := range n.subNodes {
+		fmt.Println(i, `------->`, sn.Type())
+	}
+	return `1`
 }
 
 func (n *fieldNode) expand(t Node) {

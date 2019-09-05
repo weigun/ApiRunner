@@ -2,6 +2,8 @@ package main
 
 import (
 	"ApiRunner/business"
+	"fmt"
+
 	// "ApiRunner/utils"
 
 	// "fmt"
@@ -9,7 +11,7 @@ import (
 	// "ApiRunner/services"
 	// "path/filepath"
 	"ApiRunner/business/template"
-	_ "ApiRunner/business/template/parser"
+	"ApiRunner/business/template/lexer"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -47,6 +49,11 @@ func main() {
 	t := template.New().Funcs(fnMap)
 	t.Parse(input)
 	spew.Dump(t)
+	for i, node := range t.Tree.GetNodeList() {
+		if node.Type() == lexer.TokenField {
+			fmt.Println(i, node.String())
+		}
+	}
 	time.Sleep(1000 * time.Second)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)

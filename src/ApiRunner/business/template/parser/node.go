@@ -57,7 +57,10 @@ func (n *funcNode) Type() int {
 }
 
 func (n *funcNode) String() string {
-	return ``
+	for i, sn := range n.subNodes {
+		fmt.Println(i, `------->`, sn.Type())
+	}
+	return `2`
 }
 
 func (n *funcNode) expand(t Node) {
@@ -78,5 +81,17 @@ func (n *paramNode) Type() int {
 }
 
 func (n *paramNode) String() string {
+	return ``
+}
+
+type varNode struct {
+	*lexer.Token
+}
+
+func (n *varNode) Type() int {
+	return n.Typ
+}
+
+func (n *varNode) String() string {
 	return ``
 }

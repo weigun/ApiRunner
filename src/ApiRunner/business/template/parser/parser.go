@@ -63,36 +63,20 @@ func (t *Tree) addNode(n Node) {
 	switch n.Type() {
 	case lexer.TokenField:
 		nodeIndex := len(t.nodeList) - 1
-		if nodeIndex < 0 {
-			//first token
-			tn := n.(*fieldNode)
-			tn.expand(n)
-			t.nodeList = append(t.nodeList, tn)
+		if nodeIndex < 0 || t.nodeList[nodeIndex].Type() != n.Type() {
+			t.nodeList = append(t.nodeList, n)
 		} else {
-			// 前面已经有node时，分2种情况：
-			// 1.首个field node
-			// 2.非首个field node
-			// for nodeIndex >= 0 {
-			preNodeTyp := t.nodeList[nodeIndex].Type()
-			if preNodeTyp != n.Type() {
-				// 首个field node
-				// t.nodeList = append(t.nodeList, n)
-				tn := n.(*fieldNode)
-				tn.expand(n)
-				t.nodeList = append(t.nodeList, tn)
-			} else {
-				// 非首个field node
-				nodeIndex--
-				for nodeIndex >= 0 {
-					preNodeTyp = t.nodeList[nodeIndex].Type()
-					if preNodeTyp != n.Type() {
-						//当前nodeIndex + 1 就是祖先了
-						ancestor := t.nodeList[nodeIndex+1].(*fieldNode)
-						ancestor.expand(n)
-						break
-					}
-					nodeIndex--
+			// 非首个field node
+			nodeIndex--
+			for nodeIndex >= 0 {
+				preNodeTyp := t.nodeList[nodeIndex].Type()
+				if preNodeTyp != n.Type() {
+					//当前nodeIndex + 1 就是祖先了
+					ancestor := t.nodeList[nodeIndex+1].(*fieldNode)
+					ancestor.expand(n)
+					break
 				}
+				nodeIndex--
 			}
 		}
 
@@ -183,6 +167,8 @@ func parseFuncName(t *Tree) parseFn {
 	m := t.funcs[index]
 	m[t.curToken.Val] = []interface{}{}
 	t.funcs[index] = m
+	funcNodeObj := &funcNode{t.curToken, []Node{}}
+	t.addNode(funcNodeObj)
 	t.getToken()
 	return parseToken
 }
@@ -197,6 +183,8 @@ func parseParams(t *Tree) parseFn {
 		break
 	}
 	t.funcs[index] = m
+	funcNodeObj := &funcNode{t.curToken, []Node{}}
+	t.addNode(funcNodeObj)
 	t.getToken()
 	return parseToken
 }

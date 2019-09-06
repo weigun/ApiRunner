@@ -50,7 +50,10 @@ func main() {
 	t.Parse(input)
 	spew.Dump(t)
 	for i, node := range t.Tree.GetNodeList() {
-		if node.Type() == lexer.TokenField {
+		switch node.Type() {
+		case lexer.TokenField:
+			fmt.Println(i, node.String())
+		case lexer.TokenFuncName:
 			fmt.Println(i, node.String())
 		}
 	}

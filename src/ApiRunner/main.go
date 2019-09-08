@@ -49,14 +49,6 @@ func main() {
 	t := template.New().Funcs(fnMap)
 	t.Parse(input)
 	spew.Dump(t)
-	for i, node := range t.Tree.GetNodeList() {
-		switch node.Type() {
-		case lexer.TokenField:
-			fmt.Println(i, node.String())
-		case lexer.TokenFuncName:
-			fmt.Println(i, node.String())
-		}
-	}
 	time.Sleep(1000 * time.Second)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)

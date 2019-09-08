@@ -148,7 +148,7 @@ func parseToken(t *Tree) parseFn {
 func parseField(t *Tree) parseFn {
 	index := len(t.fields) - 1
 	fmt.Println(`parseField index:`, index)
-	fieldNodeObj := &fieldNode{t.curToken, []Node{}}
+	fieldNodeObj := &fieldNode{t.curToken}
 	t.addNode(fieldNodeObj)
 	t.fields[index] = append(t.fields[index], t.curToken.Val)
 	t.getToken()
@@ -167,7 +167,7 @@ func parseFuncName(t *Tree) parseFn {
 	m := t.funcs[index]
 	m[t.curToken.Val] = []interface{}{}
 	t.funcs[index] = m
-	funcNodeObj := &funcNode{t.curToken, []Node{}}
+	funcNodeObj := &funcNode{t.curToken}
 	t.addNode(funcNodeObj)
 	t.getToken()
 	return parseToken
@@ -183,7 +183,7 @@ func parseParams(t *Tree) parseFn {
 		break
 	}
 	t.funcs[index] = m
-	funcNodeObj := &funcNode{t.curToken, []Node{}}
+	funcNodeObj := &funcNode{t.curToken}
 	t.addNode(funcNodeObj)
 	t.getToken()
 	return parseToken

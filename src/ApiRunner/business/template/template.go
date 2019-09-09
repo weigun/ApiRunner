@@ -38,6 +38,10 @@ func (t *Template) Funcs(funcMap FuncMap) *Template {
 }
 
 func (t *Template) Execute(wr io.Writer, data interface{}) {
+	t.walk(wr, data)
+}
+
+func (t *Template) walk(wr io.Writer, data interface{}) {
 
 }
 

@@ -17,7 +17,7 @@ type Node interface {
 }
 
 type CompNode interface {
-	Expand()
+	Expand(Node)
 }
 
 //plain text
@@ -66,7 +66,7 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 		for i := 1; i < numIn; i++ {
 			// args := []reflect.Value{reflect.ValueOf("wudebao"), reflect.ValueOf(30)}
 			v := n.subNodes[i].TranslateFrom(data, execFuncs)
-			args = append(args, reflect.Value{reflect.ValueOf(v)})
+			args = append(args, reflect.ValueOf(v))
 		}
 		return convertValue(fun.Call(args))
 	default:

@@ -64,35 +64,43 @@ func (t *Tree) addNode(n Node) {
 	case lexer.TokenField:
 		nodeIndex := len(t.nodeList) - 1
 		if nodeIndex < 0 || t.nodeList[nodeIndex].Type() != n.Type() {
-			t.nodeList = append(t.nodeList, n)
+			container := containerNode{[]Node{}}
+			container.Expand(n)
+			t.nodeList = append(t.nodeList, &container)
 		} else {
 			// 非首个field node
-			nodeIndex--
-			for nodeIndex >= 0 {
-				preNodeTyp := t.nodeList[nodeIndex].Type()
-				if preNodeTyp != n.Type() {
-					//当前nodeIndex + 1 就是祖先了
-					ancestor := t.nodeList[nodeIndex+1].(*fieldNode)
-					ancestor.expand(n)
-					break
-				}
-				nodeIndex--
-			}
+			container := t.nodeList[nodeIndex].(CompNode)
+			container.Expand(n)
+			// nodeIndex--
+			// for nodeIndex >= 0 {
+			// 	preNodeTyp := t.nodeList[nodeIndex].Type()
+			// 	if preNodeTyp != n.Type() {
+			// 		//当前nodeIndex + 1 就是祖先了
+			// 		ancestor := t.nodeList[nodeIndex+1].(*fieldNode)
+			// 		ancestor.expand(n)
+			// 		break
+			// 	}
+			// 	nodeIndex--
+			// }
 		}
 
 	case lexer.TokenFuncName:
-		t.nodeList = append(t.nodeList, n)
+		container := containerNode{[]Node{}}
+		container.Expand(n)
+		t.nodeList = append(t.nodeList, &container)
 	case lexer.TokenRawParam, lexer.TokenVarParam:
 		nodeIndex := len(t.nodeList) - 1
-		for nodeIndex >= 0 {
-			preNodeTyp := t.nodeList[nodeIndex].Type()
-			if preNodeTyp == lexer.TokenFuncName {
-				obj := t.nodeList[nodeIndex].(*funcNode)
-				obj.expand(n)
-				break
-			}
-			nodeIndex--
-		}
+		container := t.nodeList[nodeIndex].(CompNode)
+		container.Expand(n)
+		// for nodeIndex >= 0 {
+		// 	preNodeTyp := t.nodeList[nodeIndex].Type()
+		// 	if preNodeTyp == lexer.TokenFuncName {
+		// 		obj := t.nodeList[nodeIndex].(*funcNode)
+		// 		obj.expand(n)
+		// 		break
+		// 	}
+		// 	nodeIndex--
+		// }
 	default:
 		t.nodeList = append(t.nodeList, n)
 	}

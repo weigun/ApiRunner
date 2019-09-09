@@ -1,18 +1,17 @@
 package main
 
 import (
-	"ApiRunner/business"
-	"fmt"
-
-	// "ApiRunner/utils"
+	"bytes"
+	"time"
 
 	// "fmt"
-
-	// "ApiRunner/services"
 	// "path/filepath"
+
+	"ApiRunner/business"
+	// "ApiRunner/utils"
+	// "ApiRunner/services"
 	"ApiRunner/business/template"
-	"ApiRunner/business/template/lexer"
-	"time"
+	// "ApiRunner/business/template/lexer"
 
 	"github.com/davecgh/go-spew/spew"
 )
@@ -49,6 +48,8 @@ func main() {
 	t := template.New().Funcs(fnMap)
 	t.Parse(input)
 	spew.Dump(t)
+	wr := bytes.NewBufferString(``)
+	t.Execute(wr, nil)
 	time.Sleep(1000 * time.Second)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)

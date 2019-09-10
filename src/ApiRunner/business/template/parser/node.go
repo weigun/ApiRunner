@@ -76,8 +76,11 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 }
 
 func (n *containerNode) Expand(t Node) {
-	if t.Type() == lexer.TokenField {
+	switch t.Type() {
+	case lexer.TokenField, lexer.TokenFuncName, lexer.TokenRawParam, lexer.TokenVarParam:
 		n.subNodes = append(n.subNodes, t)
+	default:
+		fmt.Println(`not accept sub node`)
 	}
 }
 
@@ -132,5 +135,5 @@ func (n *varNode) TranslateFrom(data interface{}, execFuncs interface{}) string 
 
 func convertValue(data interface{}) string {
 	//将数据转换为字符串
-	return ``
+	return fmt.Sprintf(`%v`, data)
 }

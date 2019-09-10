@@ -71,17 +71,6 @@ func (t *Tree) addNode(n Node) {
 			// 非首个field node
 			container := t.nodeList[nodeIndex].(CompNode)
 			container.Expand(n)
-			// nodeIndex--
-			// for nodeIndex >= 0 {
-			// 	preNodeTyp := t.nodeList[nodeIndex].Type()
-			// 	if preNodeTyp != n.Type() {
-			// 		//当前nodeIndex + 1 就是祖先了
-			// 		ancestor := t.nodeList[nodeIndex+1].(*fieldNode)
-			// 		ancestor.expand(n)
-			// 		break
-			// 	}
-			// 	nodeIndex--
-			// }
 		}
 
 	case lexer.TokenFuncName:
@@ -92,15 +81,6 @@ func (t *Tree) addNode(n Node) {
 		nodeIndex := len(t.nodeList) - 1
 		container := t.nodeList[nodeIndex].(CompNode)
 		container.Expand(n)
-		// for nodeIndex >= 0 {
-		// 	preNodeTyp := t.nodeList[nodeIndex].Type()
-		// 	if preNodeTyp == lexer.TokenFuncName {
-		// 		obj := t.nodeList[nodeIndex].(*funcNode)
-		// 		obj.expand(n)
-		// 		break
-		// 	}
-		// 	nodeIndex--
-		// }
 	default:
 		t.nodeList = append(t.nodeList, n)
 	}
@@ -165,6 +145,8 @@ func parseField(t *Tree) parseFn {
 
 func parseVariable(t *Tree) parseFn {
 	t.vars = append(t.vars, t.curToken.Val)
+	varNodeObj := &varNode{t.curToken}
+	t.addNode(varNodeObj)
 	t.getToken()
 	return parseToken
 }
@@ -191,8 +173,8 @@ func parseParams(t *Tree) parseFn {
 		break
 	}
 	t.funcs[index] = m
-	funcNodeObj := &funcNode{t.curToken}
-	t.addNode(funcNodeObj)
+	paramNodeObj := &paramNode{t.curToken}
+	t.addNode(paramNodeObj)
 	t.getToken()
 	return parseToken
 }
@@ -212,10 +194,12 @@ func parseRightDelim(t *Tree) parseFn {
 }
 
 func parseError(t *Tree) parseFn {
-	return parseEOF
+	return nil
 }
 
 func parseEOF(t *Tree) parseFn {
-	fmt.Print(t.curToken.Val)
+	// fmt.Print(t.curToken.Val)
+	textNodeObj := &textNode{t.curToken}
+	t.addNode(textNodeObj)
 	return nil
 }

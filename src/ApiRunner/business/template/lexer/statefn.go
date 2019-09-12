@@ -28,11 +28,19 @@ func LexBegin(l *Lexer) stateFn {
 			l.Emit(TokenEOF)
 			return nil
 		}
-		if strings.HasPrefix(l.InputToEnd(), LEFT_DLIM) {
+		if x := strings.Index(l.InputToEnd(), LEFT_DLIM); x >= 0 {
+			l.Pos += Pos(x)
 			l.Emit(TokenText)
 			return LexLeftDelim
 		}
-		l.Inc()
+		l.Pos = Pos(len(l.Input))
+		l.Emit(TokenText)
+		return LexBegin
+		// if strings.HasPrefix(l.InputToEnd(), LEFT_DLIM) {
+		// 	l.Emit(TokenText)
+		// 	return LexLeftDelim
+		// }
+		// l.Inc()
 	}
 }
 

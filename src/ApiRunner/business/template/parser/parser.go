@@ -199,7 +199,7 @@ func parseError(t *Tree) parseFn {
 
 func parseEOF(t *Tree) parseFn {
 	// fmt.Print(t.curToken.Val)
-	textNodeObj := &textNode{t.curToken}
-	t.addNode(textNodeObj)
+	// textNodeObj := &textNode{t.curToken}
+	// t.addNode(textNodeObj)
 	return nil
 }

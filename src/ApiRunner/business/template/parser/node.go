@@ -153,7 +153,11 @@ func (n *varNode) Type() int {
 }
 
 func (n *varNode) TranslateFrom(data interface{}, execFuncs interface{}) string {
-	return ``
+	x := strings.Index(n.Val, `$`)
+	fmt.Println(n.Val[x+1:])
+	val := data.(map[string]interface{})[n.Val[x+1:]]
+	fmt.Printf("%T,val:%s\n", val, val)
+	return convertValue(val)
 }
 
 func convertValue(data interface{}) string {
@@ -171,7 +175,7 @@ func convertValue(data interface{}) string {
 		case reflect.String:
 			return data[0].Interface().(string)
 		case reflect.Int:
-			return fmt.Sprintf(`%s`, data[0].Interface().(int))
+			return fmt.Sprintf(`%d`, data[0].Interface().(int))
 		default:
 			return fmt.Sprintf(`%s`, data[0])
 		}
@@ -180,6 +184,6 @@ func convertValue(data interface{}) string {
 	default:
 		fmt.Printf(`%T`, data)
 	}
-	return fmt.Sprintf(`%s`, data)
+	return fmt.Sprintf(`%v`, data)
 
 }

@@ -42,7 +42,10 @@ func (t *Template) Execute(wr io.Writer, data interface{}) {
 }
 
 func (t *Template) walk(wr io.Writer, data interface{}) {
-
+	for _, node := range t.GetNodeList() {
+		s := node.TranslateFrom(data, t.execFuncs)
+		wr.Write([]byte(s))
+	}
 }
 
 func New() *Template {

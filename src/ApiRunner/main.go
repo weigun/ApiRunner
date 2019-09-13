@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"time"
 
-	// "fmt"
+	"fmt"
 	// "path/filepath"
 
 	"ApiRunner/business"
@@ -16,12 +16,12 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func get_luckly_from_name(name string) int {
+func get_luckly_from_name(name string) string {
 	switch name {
 	case `weigun`:
-		return 666
+		return `666`
 	default:
-		return 233
+		return `233`
 	}
 }
 
@@ -49,7 +49,14 @@ func main() {
 	t.Parse(input)
 	spew.Dump(t)
 	wr := bytes.NewBufferString(``)
-	t.Execute(wr, nil)
+	data := make(map[string]interface{})
+	subData := make(map[string]interface{})
+	subData[`user1`] = map[string]interface{}{`email`: `283257958@qq.com`}
+	data[`refs`] = subData
+	data[`age`] = 6
+	data[`name`] = `weigun`
+	t.Execute(wr, data)
+	fmt.Println(wr.String())
 	time.Sleep(1000 * time.Second)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)

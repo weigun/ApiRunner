@@ -16,13 +16,23 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func get_luckly_from_name(name string) string {
+func get_luckly_from_name(name string) int {
 	switch name {
 	case `weigun`:
-		return `666`
+		return 666
 	default:
-		return `233`
+		return 233
 	}
+}
+
+func get_class(age int, isclass bool) int {
+	if age > 18 {
+		if isclass != false {
+			return 18
+		}
+		return 20
+	}
+	return 15
 }
 
 func main() {
@@ -44,16 +54,17 @@ func main() {
 	*/
 	fnMap := make(template.FuncMap)
 	fnMap[`get_luckly_from_name`] = get_luckly_from_name
-	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old`
+	fnMap[`get_class`] = get_class
+	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old,study of ${get_class($age,true)}`
 	t := template.New().Funcs(fnMap)
 	t.Parse(input)
-	spew.Dump(t)
+	spew.Dump(``)
 	wr := bytes.NewBufferString(``)
 	data := make(map[string]interface{})
 	subData := make(map[string]interface{})
 	subData[`user1`] = map[string]interface{}{`email`: `283257958@qq.com`}
 	data[`refs`] = subData
-	data[`age`] = 6
+	data[`age`] = 22
 	data[`name`] = `weigun`
 	t.Execute(wr, data)
 	fmt.Println(wr.String())

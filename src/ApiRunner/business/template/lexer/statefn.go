@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"fmt"
 	// "fmt"
 	"strings"
 	"unicode"
@@ -79,6 +80,7 @@ func LexText(l *Lexer) stateFn {
 			// 需要判断有无参数
 			tmpPos := l.Pos
 			paramsStr := l.CurrebFnArgs() //(),(4),(4,12) etc
+			fmt.Println(`paramsStr:`, paramsStr)
 			if paramsStr == `` {
 				//无参数
 				return LexRightParen
@@ -99,7 +101,18 @@ func LexText(l *Lexer) stateFn {
 			} else {
 				//多个参数
 				for _, v := range params {
-					l.Pos = l.Start + 1 + len(v)
+					start := l.Start
+					for {
+						fmt.Println(l.Input[start:])
+						if strings.HasPrefix(l.Input[start:], v) {
+							l.Pos = start + len(v)
+							l.Start = start
+							break
+						}
+						start++
+					}
+					// l.Pos = l.Start + len(v)
+					fmt.Println(`888888888888888`, l.CurrebInput(), v)
 					//判断是明文参数还是变量参数
 					if strings.Index(v, DOLLAR) == -1 {
 						//明文参数

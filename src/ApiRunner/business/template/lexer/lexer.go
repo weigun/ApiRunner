@@ -64,7 +64,7 @@ func (l *Lexer) CurrebInput() string {
 }
 
 func (l *Lexer) CurrebFnArgs() string {
-	return l.Input[l.FnStart+1 : l.Pos-1]
+	return l.Input[l.FnStart+1 : l.Pos]
 }
 
 func (l *Lexer) Dec() {

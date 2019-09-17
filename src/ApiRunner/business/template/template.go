@@ -12,6 +12,7 @@ TODO:
 1.需要捕获panic，并且进行恢复
 2.同一个模板可以重复解析
 3.Template允许并行化
+4.函数参数可以支持不同类型，现在只支持string
 
 */
 type FuncMap = map[string]interface{}

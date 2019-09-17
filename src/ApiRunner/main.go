@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"strconv"
 	"time"
 
 	"fmt"
@@ -25,9 +26,10 @@ func get_luckly_from_name(name string) int {
 	}
 }
 
-func get_class(age int, isclass bool) int {
+func get_class(strage, isclass string) int {
+	age, _ := strconv.ParseInt(strage, 10, 64)
 	if age > 18 {
-		if isclass != false {
+		if isclass != `false` {
 			return 18
 		}
 		return 20

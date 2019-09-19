@@ -28,6 +28,7 @@ func (t *Template) Parse(text string) (*Template, error) {
 }
 
 func (t *Template) Funcs(funcMap FuncMap) *Template {
+	// TODO maybe need a lock
 	for name, fn := range funcMap {
 		v := reflect.ValueOf(fn)
 		if v.Kind() != reflect.Func {

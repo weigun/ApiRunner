@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"strconv"
+	// "strconv"
 	"time"
 
 	"fmt"
@@ -26,10 +26,11 @@ func get_luckly_from_name(name string) int {
 	}
 }
 
-func get_class(strage, isclass string) int {
-	age, _ := strconv.ParseInt(strage, 10, 64)
+func get_class(strage int, isclass bool) int {
+	// age, _ := strconv.ParseInt(strage, 10, 64)
+	age := strage
 	if age > 18 {
-		if isclass != `false` {
+		if isclass != false {
 			return 18
 		}
 		return 20
@@ -57,7 +58,7 @@ func main() {
 	fnMap := make(template.FuncMap)
 	fnMap[`get_luckly_from_name`] = get_luckly_from_name
 	fnMap[`get_class`] = get_class
-	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old,study of ${get_class($age,true)}`
+	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old,study of ${get_class($age,$bool)}`
 	t := template.New().Funcs(fnMap)
 	t.Parse(input)
 	spew.Dump(``)
@@ -68,6 +69,7 @@ func main() {
 	data[`refs`] = subData
 	data[`age`] = 22
 	data[`name`] = `weigun`
+	data[`bool`] = true
 	t.Execute(wr, data)
 	fmt.Println(wr.String())
 	time.Sleep(1000 * time.Second)

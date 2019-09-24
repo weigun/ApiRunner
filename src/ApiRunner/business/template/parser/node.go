@@ -81,7 +81,7 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 			args = append(args, reflect.ValueOf(v))
 		}
 		for _, v := range args {
-			fmt.Printf("type:%T,val:%v\n", v, v)
+			fmt.Printf("type:%T,kind:%s,val:%v\n", v, v.Kind(), v)
 		}
 		return convertValue(fun.Call(args))
 	default:
@@ -139,6 +139,7 @@ func (n *paramNode) TranslateFrom(data interface{}, execFuncs interface{}) strin
 		fmt.Println(n.Val[x+1:])
 		val := data.(map[string]interface{})[n.Val[x+1:]]
 		fmt.Println(`val:`, val)
+		fmt.Printf("->type:%T,kind:%s,val:%v\n", val, reflect.ValueOf(val).Kind(), val)
 		return convertValue(val)
 	}
 	return n.Val

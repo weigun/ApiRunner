@@ -183,7 +183,7 @@ func convertValue(data interface{}) string {
 	case string:
 		return data.(string)
 	default:
-		fmt.Printf(`%T`, data)
+		fmt.Printf("%T\n", data)
 	}
 	return fmt.Sprintf(`%v`, data)
 

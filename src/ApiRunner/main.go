@@ -31,7 +31,7 @@ func get_class(strage int, isclass bool) int {
 	age := strage
 	if age > 18 {
 		if isclass != false {
-			return 18
+			return 19
 		}
 		return 20
 	}

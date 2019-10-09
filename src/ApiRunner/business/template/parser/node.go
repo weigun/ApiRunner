@@ -21,6 +21,10 @@ type CompNode interface {
 	Expand(Node)
 }
 
+type IValue interface {
+	ValueFrom(interface{}) reflect.Value
+}
+
 //plain text
 type textNode struct {
 	*lexer.Token
@@ -75,10 +79,11 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 		numIn := len(n.subNodes) - 1
 		args := make([]reflect.Value, 0, 1)
 		for i := 1; i <= numIn; i++ {
-			// args := []reflect.Value{reflect.ValueOf("wudebao"), reflect.ValueOf(30)}
-			v := n.subNodes[i].TranslateFrom(data, execFuncs)
+			// v := n.subNodes[i].TranslateFrom(data, execFuncs)
+			nv := n.subNodes[i].(*paramNode)
+			v := nv.ValueFrom(data)
 			fmt.Println(v)
-			args = append(args, reflect.ValueOf(v))
+			args = append(args, v)
 		}
 		for _, v := range args {
 			fmt.Printf("type:%T,kind:%s,val:%v\n", v, v.Kind(), v)
@@ -143,6 +148,14 @@ func (n *paramNode) TranslateFrom(data interface{}, execFuncs interface{}) strin
 		return convertValue(val)
 	}
 	return n.Val
+}
+
+func (n *paramNode) ValueFrom(data interface{}) reflect.Value {
+	if x := strings.Index(n.Val, `$`); x >= 0 {
+		val := data.(map[string]interface{})[n.Val[x+1:]]
+		return reflect.ValueOf(val)
+	}
+	return reflect.ValueOf(n.Val)
 }
 
 type varNode struct {

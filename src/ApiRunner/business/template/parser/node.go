@@ -21,10 +21,6 @@ type CompNode interface {
 	Expand(Node)
 }
 
-type IValue interface {
-	ValueFrom(interface{}) reflect.Value
-}
-
 //plain text
 type textNode struct {
 	*lexer.Token
@@ -139,14 +135,14 @@ func (n *paramNode) Type() int {
 }
 
 func (n *paramNode) TranslateFrom(data interface{}, execFuncs interface{}) string {
-	if x := strings.Index(n.Val, `$`); x >= 0 {
-		//需要对变量进行翻译
-		fmt.Println(n.Val[x+1:])
-		val := data.(map[string]interface{})[n.Val[x+1:]]
-		fmt.Println(`val:`, val)
-		fmt.Printf("->type:%T,kind:%s,val:%v\n", val, reflect.ValueOf(val).Kind(), val)
-		return convertValue(val)
-	}
+	// if x := strings.Index(n.Val, `$`); x >= 0 {
+	// 	//需要对变量进行翻译
+	// 	fmt.Println(n.Val[x+1:])
+	// 	val := data.(map[string]interface{})[n.Val[x+1:]]
+	// 	fmt.Println(`val:`, val)
+	// 	fmt.Printf("->type:%T,kind:%s,val:%v\n", val, reflect.ValueOf(val).Kind(), val)
+	// 	return convertValue(val)
+	// }
 	return n.Val
 }
 

@@ -72,9 +72,10 @@ func main() {
 	data[`bool`] = true
 	t.Execute(wr, data)
 	fmt.Println(wr.String())
-	time.Sleep(1000 * time.Second)
+	time.Sleep(5 * time.Second)
+	fmt.Println(`----------------------------------`)
 	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)
 	runner.Start()
-	time.Sleep(10 * time.Second)
+	time.Sleep(1000 * time.Second)
 }

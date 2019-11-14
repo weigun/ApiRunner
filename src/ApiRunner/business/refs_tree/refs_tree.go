@@ -11,7 +11,7 @@ type Node interface {
 	Parent() *rnode
 	ValueOf(string) interface{}
 	ChildAt(int) *rnode
-	SetParent(*rnode)
+	SetParent(Node)
 	AddChild(*rnode)
 	AddPairs(string, interface{})
 }
@@ -45,13 +45,13 @@ func (n *rnode) ChildAt(index int) *rnode {
 	return n.children[index]
 }
 
-func (n *rnode) SetParent(parent *rnode) {
-	n.parent = parent
+func (n *rnode) SetParent(parent Node) {
+	n.parent = parent.(*rnode)
 }
 
 func (n *rnode) AddChild(child *rnode) {
-	n.children = append(n.children, child)
 	child.SetParent(n)
+	n.children = append(n.children, child)
 }
 
 func (n *rnode) AddPairs(key string, val interface{}) {

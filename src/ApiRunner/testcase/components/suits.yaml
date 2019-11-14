@@ -5,7 +5,7 @@ require:
 module: 
   host: http://depay-test.ixbow.com/
   def: #入参
-    email: "{{gen_email}}"
+    email: "${gen_email()}"
 
   steps: # just like step by step when use debug
     - node: 
@@ -13,7 +13,7 @@ module:
         ref: user1
         exec: *create_user
         args: &args
-          email: "{{$email}}"
+          email: "${email}"
         hooks: 
           beforeRequest: encrypt
           afterResponse: decrypt
@@ -25,7 +25,7 @@ module:
         ref: user2
         exec: *create_user
         args: &args
-          email: "{{$refs.user1.ret_email}}"
+          email: "${refs.user1.login.ret_email}"
         hooks: 
           beforeRequest: encrypt
           afterResponse: decrypt

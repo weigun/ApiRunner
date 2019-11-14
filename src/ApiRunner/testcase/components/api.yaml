@@ -3,7 +3,7 @@ path: /api/signup
 method: POST
 headers: 
   Content-Type: "application/json"
-  Authorization: "brea {{$token}}"
+  Authorization: "brea ${token}"
 params: 
   email: abc@qq.com
   password: 111111

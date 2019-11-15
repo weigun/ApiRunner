@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	// "strings"
+	"ApiRunner/business/refs_tree"
 	"ApiRunner/business/template/lexer"
 )
 
@@ -61,6 +62,21 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 			switch tmpData[fieldName].(type) {
 			case map[string]interface{}:
 				tmpData = tmpData[fieldName].(map[string]interface{})
+			case refs.Node:
+				//如果引用树,需要将下一个节点替换掉tmpdata
+				// refs.user1.login.ret_email
+				refs := tmpData[fieldName].(refs.Node)
+				if refs.Len() > 0 {
+					for i := 0; i < refs.Len(); i++ {
+						ref := refs.ChildAt(i)
+						tmpData[ref.Name()] = ref
+					}
+				} else {
+					//叶子节点了
+					fieldName := n.subNodes[i+1].TranslateFrom(nil, nil)
+					return refs.ValueOf(fieldName).(string) //默认当做字符串来处理
+				}
+
 			default:
 				return convertValue(tmpData[fieldName])
 			}

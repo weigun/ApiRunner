@@ -14,6 +14,7 @@ type Node interface {
 	SetParent(Node)
 	AddChild(*rnode)
 	AddPairs(string, interface{})
+	Len() int //how many children
 }
 
 type rnode struct {
@@ -56,6 +57,10 @@ func (n *rnode) AddChild(child *rnode) {
 
 func (n *rnode) AddPairs(key string, val interface{}) {
 	n.vars[key] = val
+}
+
+func (n *rnode) Len() int {
+	return len(n.children)
 }
 
 func New(name string) *rnode {

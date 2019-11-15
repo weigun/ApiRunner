@@ -36,17 +36,22 @@ type TestRunner struct {
 	Reporter *models.Report
 	canceler context.CancelFunc
 	render   *renderer
-	refs     refNode.Node
+	refs     refNode.Node //当前的引用
+	rootRefs refNode.Node //根引用
 	Status   int
 }
 
 func NewTestRunner(id string, pipeObj models.Executable) *TestRunner {
-	return &TestRunner{
+	t := &TestRunner{
 		ID:      id,
 		PipeObj: pipeObj,
 		refs:    refNode.New(`root`),
 		render:  newRenderer(),
 	}
+	t.refs.SetParent(t.refs)
+	t.rootRefs = t.refs
+	t.Reporter = models.NewReport()
+	return t
 }
 
 func (r *TestRunner) Start() {
@@ -54,10 +59,6 @@ func (r *TestRunner) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	valueCtx := context.WithValue(ctx, `status`, r.Status)
 	r.canceler = cancel
-	//new report
-	report := models.NewReport()
-	r.Reporter = report
-	r.refs.SetParent(r.refs)
 	go func(ctx context.Context) {
 		//TODO 需要保存堆栈
 		go execute(r) //用例执行
@@ -110,19 +111,20 @@ func execute(r *TestRunner) {
 }
 
 func executePipeline(r *TestRunner) {
-	//backup self so can revert after recursive
-	parentPipe := r.PipeObj.(*models.Pipeline)
-	parentRef := r.refs.Parent()
-	log.Println(`cur refs:`, r.refs)
-	log.Println(`parentRef:`, parentRef)
-
-	spew.Dump(r.PipeObj.(*models.Pipeline).Def)
+	log.Println(`dump def:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
 	var newDef models.Variables
 	bDef := r.render.fillData(toJson(r.PipeObj.(*models.Pipeline).Def), nil)
 	json.Unmarshal(bDef, &newDef)
 	r.PipeObj.(*models.Pipeline).Def = newDef
 
-	spew.Dump(r.PipeObj.(*models.Pipeline).Def)
+	// spew.Dump(r.PipeObj.(*models.Pipeline).Def)
+	log.Println(`dump newDef:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
+
+	//backup self so can revert after recursive
+	parentPipe := r.PipeObj.(*models.Pipeline)
+	parentRef := r.refs.Parent()
+	log.Println(`cur refs:`, r.refs)
+	log.Println(`parentRef:`, parentRef)
 
 	for index, execNode := range r.PipeObj.(*models.Pipeline).Steps {
 		if r.Status == Canceled {
@@ -279,15 +281,23 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) {
 	} else {
 		subPipeObj := execNode.Exec.(*models.Pipeline)
 		//先合并参数
-		spew.Dump(execNode.Args)
+		log.Println(`execNode.Args:`, spew.Sdump(execNode.Args))
 		for k, v := range execNode.Args {
 			subPipeObj.Def[k] = v
 		}
 		var newDef models.Variables
-		json.Unmarshal(r.render.fillData(toJson(subPipeObj.Def), pipeObj.Def), &newDef)
+
+		//需要合并def和refs，来作为数据源
+		dataSource := make(map[string]interface{})
+		for k, v := range pipeObj.Def {
+			dataSource[k] = v
+		}
+		dataSource[`refs`] = r.rootRefs
+		json.Unmarshal(r.render.fillData(toJson(subPipeObj.Def), dataSource), &newDef)
 		subPipeObj.Def = newDef
 		r.PipeObj = subPipeObj
 		r.refs = ref
+		log.Println(`replace def:`, subPipeObj.Def)
 		executePipeline(r)
 	}
 

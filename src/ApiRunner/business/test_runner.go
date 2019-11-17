@@ -107,11 +107,12 @@ func execute(r *TestRunner) {
 
 	report.SetSummary(*sum)
 	log.Println(report.Json())
-	spew.Dump(r.refs)
+	// spew.Dump(r.refs)
 }
 
-func executePipeline(r *TestRunner) {
-	log.Println(`dump def:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
+func executePipeline(r *TestRunner) bool {
+	var isSucc bool
+	// log.Println(`dump def:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
 	var newDef models.Variables
 	bDef := r.render.fillData(toJson(r.PipeObj.(*models.Pipeline).Def), nil)
 	json.Unmarshal(bDef, &newDef)
@@ -130,21 +131,36 @@ func executePipeline(r *TestRunner) {
 		if r.Status == Canceled {
 			// 如果runner的已经取消了，就没必要再去执行下一个用例了
 			log.Println(`executor stopping,because runner is canceled `)
-			return
+			return false
 		}
 		node := refNode.New(execNode.RefTag())
 		r.refs.AddChild(node)
 		//开始执行step
 		log.Println(`--------------step begin--------------------`)
-		executeStep(&execNode, r, index)
+		retryTimes := execNode.Retry
+		repeatTimes := execNode.Repeat
+		log.Printf("retryTimes:%d\trepeatTimes:%d\n", retryTimes, repeatTimes)
+		for i := 0; i <= repeatTimes; i++ {
+			if !executeStep(&execNode, r, index) {
+				//if step failed
+				for j := 0; j < retryTimes; j++ {
+					if executeStep(&execNode, r, index) {
+						break
+					}
+				}
+			}
+		}
+
 		log.Println(`--------------step end----------------------`)
 	}
 	r.refs = parentRef
 	r.PipeObj = parentPipe //revert self
 	log.Println(`after revert,cur refs:`, r.refs)
+	return isSucc
 }
 
-func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) {
+func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
+	var isSucc bool
 	log.Println(`exec step:`, execNode.Desc)
 	pipeObj := r.PipeObj.(*models.Pipeline)
 	report := r.Reporter
@@ -272,16 +288,18 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) {
 		// TODO error and skip
 		if allPassed {
 			record.Stat = models.SUCCESS
+			isSucc = true
 		} else {
 			record.Stat = models.FAILED
 		}
-
 		detail.AddRecord(*record)
 		detail.Status.Count(record.Stat)
+		execNode.Retry -= 1
+		execNode.Repeat -= 1
 	} else {
 		subPipeObj := execNode.Exec.(*models.Pipeline)
 		//先合并参数
-		log.Println(`execNode.Args:`, spew.Sdump(execNode.Args))
+		// log.Println(`execNode.Args:`, spew.Sdump(execNode.Args))
 		for k, v := range execNode.Args {
 			subPipeObj.Def[k] = v
 		}
@@ -298,8 +316,12 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) {
 		r.PipeObj = subPipeObj
 		r.refs = ref
 		log.Println(`replace def:`, subPipeObj.Def)
-		executePipeline(r)
+		isSucc = executePipeline(r)
 	}
-
-	report.AddDetail(*detail)
+	if isSucc || execNode.Retry <= 0 {
+		if execNode.Repeat <= 0 {
+			report.AddDetail(*detail)
+		}
+	}
+	return isSucc
 }

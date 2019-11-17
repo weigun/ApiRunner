@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 
 	// toml "github.com/BurntSushi/toml"
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 	// "github.com/json-iterator/go"
 
 	// "gopkg.in/yaml.v2"
@@ -33,8 +33,8 @@ func ParsePipe(filePath string) (pipeObj models.Executable) {
 	pipeObj = _parsePipe(m)
 	// log.Println(`*************************`)
 	// spew.Dump(m)
-	spew.Dump(pipeObj)
-	spew.Dump(filePath)
+	// spew.Dump(pipeObj)
+	// spew.Dump(filePath)
 	return
 }
 
@@ -58,6 +58,7 @@ func _parsePipe(pipeMap strfacemap) *models.Pipeline {
 	}
 	for _, node := range nodes {
 		node := node.(strfacemap)[`node`].(strfacemap)
+		// log.Println(`raw execnode:`, spew.Sdump(node))
 		var nodeObj models.ExecNode
 		config.Result = &nodeObj
 		decoder, err := mapstructure.NewDecoder(config)
@@ -65,6 +66,17 @@ func _parsePipe(pipeMap strfacemap) *models.Pipeline {
 			log.Panic(err.Error())
 		}
 		decoder.Decode(node)
+		//require后，所有的值类型都是string，所以这里需要对一些number的字段进行转换
+		if utils.ToNumber(node[`retry`]) == nil {
+			nodeObj.Retry = 0
+		} else {
+			nodeObj.Retry = int(utils.ToNumber(node[`retry`]).(int64))
+		}
+		if utils.ToNumber(node[`repeat`]) == nil {
+			nodeObj.Repeat = 0
+		} else {
+			nodeObj.Repeat = int(utils.ToNumber(node[`repeat`]).(int64))
+		}
 
 		m := require(node[`exec`].(string))
 		if _, ok := m[`module`]; ok {
@@ -76,7 +88,6 @@ func _parsePipe(pipeMap strfacemap) *models.Pipeline {
 			mustToObj(m, &out)
 			nodeObj.Exec = models.Executable(&out)
 		}
-
 		pipeObj.Steps = append(pipeObj.Steps, nodeObj)
 	}
 	return &pipeObj

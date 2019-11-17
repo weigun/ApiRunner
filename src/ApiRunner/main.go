@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	// "bytes"
 	// "strconv"
 	"time"
 
@@ -11,10 +11,9 @@ import (
 	"ApiRunner/business"
 	// "ApiRunner/utils"
 	// "ApiRunner/services"
-	"ApiRunner/business/template"
+	// "ApiRunner/business/template"
 	// "ApiRunner/business/template/lexer"
-
-	"github.com/davecgh/go-spew/spew"
+	// "github.com/davecgh/go-spew/spew"
 )
 
 func get_luckly_from_name(name string) int {
@@ -55,27 +54,30 @@ func main() {
 		runner2.Start()
 		time.Sleep(1000 * time.Second)
 	*/
-	fnMap := make(template.FuncMap)
-	fnMap[`get_luckly_from_name`] = get_luckly_from_name
-	fnMap[`get_class`] = get_class
-	input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old,study of ${get_class($age,$bool)}`
-	t := template.New().Funcs(fnMap)
-	t.Parse(input)
-	spew.Dump(``)
-	wr := bytes.NewBufferString(``)
-	data := make(map[string]interface{})
-	subData := make(map[string]interface{})
-	subData[`user1`] = map[string]interface{}{`email`: `283257958@qq.com`}
-	data[`refs`] = subData
-	data[`age`] = 22
-	data[`name`] = `weigun`
-	data[`bool`] = true
-	t.Execute(wr, data)
-	fmt.Println(wr.String())
-	time.Sleep(5 * time.Second)
+	// fnMap := make(template.FuncMap)
+	// fnMap[`get_luckly_from_name`] = get_luckly_from_name
+	// fnMap[`get_class`] = get_class
+	// input := `my email is ${refs.user1.email},my luckly number is ${get_luckly_from_name($name)},and ${age} years old,study of ${get_class($age,$bool)}`
+	// t := template.New().Funcs(fnMap)
+	// t.Parse(input)
+	// spew.Dump(``)
+	// wr := bytes.NewBufferString(``)
+	// data := make(map[string]interface{})
+	// subData := make(map[string]interface{})
+	// subData[`user1`] = map[string]interface{}{`email`: `283257958@qq.com`}
+	// data[`refs`] = subData
+	// data[`age`] = 22
+	// data[`name`] = `weigun`
+	// data[`bool`] = true
+	// t.Execute(wr, data)
+	// fmt.Println(wr.String())
+	// time.Sleep(5 * time.Second)
 	fmt.Println(`----------------------------------`)
-	pipObj := business.ParsePipe(`testcase\components\suits.yaml`)
+	pipObj := business.ParsePipe(`testcase/components/suits.yaml`)
 	runner := business.NewTestRunner(`signup`, pipObj)
 	runner.Start()
-	time.Sleep(1000 * time.Second)
+	// pipObj1 := business.ParsePipe(`testcase/components/suits.yaml`)
+	// runner1 := business.NewTestRunner(`signup`, pipObj1)
+	// runner1.Start()
+	time.Sleep(120 * time.Second)
 }

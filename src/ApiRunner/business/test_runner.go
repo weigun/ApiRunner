@@ -109,7 +109,7 @@ func execute(r *TestRunner) {
 }
 
 func executePipeline(r *TestRunner) bool {
-	var isSucc bool
+	isSucc := true
 	// log.Info(`dump def:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
 	var newDef models.Variables
 	bDef := r.render.fillData(toJson(r.PipeObj.(*models.Pipeline).Def), nil)
@@ -126,6 +126,7 @@ func executePipeline(r *TestRunner) bool {
 	log.Info(`parentRef:`, parentRef)
 
 	for index, execNode := range r.PipeObj.(*models.Pipeline).Steps {
+		stepSuccCounter := 0
 		if r.Status == Canceled {
 			// 如果runner的已经取消了，就没必要再去执行下一个用例了
 			log.Info(`executor stopping,because runner is canceled `)
@@ -138,22 +139,43 @@ func executePipeline(r *TestRunner) bool {
 		retryTimes := execNode.Retry
 		repeatTimes := execNode.Repeat
 		log.Info(fmt.Sprintf("retryTimes:%d\trepeatTimes:%d\n", retryTimes, repeatTimes))
+		backupPipeObj := r.PipeObj.(*models.Pipeline)
 		for i := 0; i <= repeatTimes; i++ {
+			if repeatTimes > 0 {
+				log.Info(fmt.Sprintf(`cur loop is %d`, i+1))
+				log.Info(`>>>>cur refs:`, r.refs)
+				log.Info(`>>>>cur pipeline:`, r.PipeObj)
+				if i > 0 {
+					r.PipeObj = backupPipeObj
+				}
+				// log.Info(spew.Sdump(r))
+			}
 			if !executeStep(&execNode, r, index) {
 				//if step failed
+				// stepSuccCounter -= 1
 				for j := 0; j < retryTimes; j++ {
+					log.Info(fmt.Sprintf(`retry times %d,cur is %d`, retryTimes, j))
+					r.PipeObj = backupPipeObj
 					if executeStep(&execNode, r, index) {
+						stepSuccCounter += 1
 						break
 					}
 				}
+			} else {
+				stepSuccCounter += 1
 			}
 		}
 
 		log.Info(`--------------step end----------------------`)
+		if stepSuccCounter != repeatTimes+1 {
+			isSucc = false
+		}
+
 	}
 	r.refs = parentRef
 	r.PipeObj = parentPipe //revert self
 	log.Info(`after revert,cur refs:`, r.refs)
+	log.Info(`executePipeline result:`, isSucc)
 	return isSucc
 }
 
@@ -297,7 +319,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 	} else {
 		subPipeObj := execNode.Exec.(*models.Pipeline)
 		//先合并参数
-		// log.Info(`execNode.Args:`, spew.Sdump(execNode.Args))
+		log.Info(`execNode.Args:`, spew.Sdump(execNode.Args))
 		for k, v := range execNode.Args {
 			subPipeObj.Def[k] = v
 		}

@@ -11,7 +11,6 @@ import (
 	// "encoding/json"
 	// "fmt"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 
 	// toml "github.com/BurntSushi/toml"
@@ -31,7 +30,7 @@ func ParsePipe(filePath string) (pipeObj models.Executable) {
 	m := require(filePath)
 	// spew.Dump(m)
 	pipeObj = _parsePipe(m)
-	// log.Println(`*************************`)
+	// log.Info(`*************************`)
 	// spew.Dump(m)
 	// spew.Dump(pipeObj)
 	// spew.Dump(filePath)
@@ -58,12 +57,12 @@ func _parsePipe(pipeMap strfacemap) *models.Pipeline {
 	}
 	for _, node := range nodes {
 		node := node.(strfacemap)[`node`].(strfacemap)
-		// log.Println(`raw execnode:`, spew.Sdump(node))
+		// log.Info(`raw execnode:`, spew.Sdump(node))
 		var nodeObj models.ExecNode
 		config.Result = &nodeObj
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
-			log.Panic(err.Error())
+			log.Fatal(err.Error())
 		}
 		decoder.Decode(node)
 		//require后，所有的值类型都是string，所以这里需要对一些number的字段进行转换
@@ -97,7 +96,7 @@ func require(casePath string) strfacemap {
 
 	// 将依赖的用例或者接口包含进当前用例
 
-	log.Printf("ReadFile: %v", casePath)
+	log.Info("ReadFile:", casePath)
 	// TODO 需要设置根目录
 	pathList := []string{utils.GetCwd()}
 	pathList = append(pathList, casePath)
@@ -135,7 +134,7 @@ func mustToObj(in strfacemap, out interface{}) {
 	config.Result = out
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {
-		log.Panic(err.Error())
+		log.Fatal(err.Error())
 	}
 	decoder.Decode(in)
 }

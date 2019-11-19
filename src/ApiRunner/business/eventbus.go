@@ -6,8 +6,6 @@ package business
 */
 
 import (
-	// "fmt"
-	"log"
 	"sync"
 )
 
@@ -34,19 +32,19 @@ func (bus *eventbus) Fire(evt event) {
 	if !evt.asyncFlag {
 		err := evt.handler(evt.params)
 		if err != nil {
-			log.Println(`event `, evt.name, ` callback error:`, err.Error())
+			log.Info(`event `, evt.name, ` callback error:`, err.Error())
 		}
 		return
 	}
 	bus.queue <- &evt
-	log.Printf(`%s add to queue`, evt.name)
+	log.Info(evt.name, ` add to queue`)
 }
 
 func (bus *eventbus) listen() {
 	for evt := range bus.queue {
 		if len(bus.running) >= MAX_TASKS {
 			//如果已经达到上限了,先等待所有回调完成
-			log.Println(`reach max tasks,join`)
+			log.Info(`reach max tasks,join`)
 			bus.join()
 		}
 		bus.running <- evt //将即将要执行的回调放到运行队列中
@@ -54,7 +52,7 @@ func (bus *eventbus) listen() {
 		go func() {
 			err := evt.handler(evt.params)
 			if err != nil {
-				log.Println(`event `, evt.name, ` async callback error:`, err.Error())
+				log.Info(`event `, evt.name, ` async callback error:`, err.Error())
 			}
 			evt.status = EVT_FINISHED
 			bus.wg.Done()
@@ -68,7 +66,7 @@ func (bus *eventbus) join() {
 	for i := 0; i < MAX_TASKS; i++ {
 		e := <-bus.running
 		if e.status != EVT_FINISHED {
-			log.Println(`omg!!event status not finished,`, e.name)
+			log.Info(`omg!!event status not finished,`, e.name)
 		}
 	}
 }

@@ -6,7 +6,6 @@ import (
 	// "io/ioutil"
 	"crypto/md5"
 	"encoding/hex"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"

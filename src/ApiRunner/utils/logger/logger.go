@@ -19,6 +19,7 @@ const (
 	INFO
 	WARNING
 	ERROR
+	FATAL
 )
 
 func SetLogLevel(level uint) {
@@ -39,6 +40,7 @@ var leveMap = map[uint]string{
 	INFO:    `INFO`,
 	WARNING: `WARING`,
 	ERROR:   `ERROR`,
+	FATAL:   `FATAL`,
 }
 
 type logger struct {
@@ -47,6 +49,9 @@ type logger struct {
 }
 
 func New(lc LogConf) *logger {
+	if lc.Prefix == `` {
+		lc.Prefix = `MAIN`
+	}
 	if lc.OutPut == nil {
 		lc.OutPut = os.Stderr
 	}
@@ -74,10 +79,36 @@ func (l *logger) Error(v ...interface{}) {
 	output(ERROR, l, v...)
 }
 
+func (l *logger) Fatal(v ...interface{}) {
+	l.instance.SetPrefix(fmt.Sprintf(`%s:%s `, l.prefix, leveMap[FATAL]))
+	log.Fatalln(v...)
+}
+
+func (l *logger) SetPrefix(prefix string) {
+	l.prefix = prefix
+}
+
 func output(level uint, l *logger, v ...interface{}) {
 	if defaultLevel > level {
 		return
 	}
 	l.instance.SetPrefix(fmt.Sprintf(`%s:%s `, l.prefix, leveMap[level]))
 	l.instance.Println(v...)
+}
+
+func GetLogger(out io.Writer, prefix string) *logger {
+	if out == nil {
+		out = os.Stderr
+	}
+	lc := LogConf{Prefix: prefix, OutPut: out}
+	return New(lc)
+}
+
+func GetLoggerByPath(logFile, prefix string) *logger {
+	out, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
+	if err != nil {
+		log.Panicln(err.Error())
+	}
+	lc := LogConf{Prefix: prefix, OutPut: out}
+	return New(lc)
 }

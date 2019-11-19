@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	Url "net/url"
@@ -65,14 +64,14 @@ func (this *requests) Post(url string, params models.Params) *young.Response {
 
 func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespHook string) *young.Response {
 	//执行请求
-	// log.Println("-------before request:", request)
+	// log.Info("-------before request:", request)
 	resp := young.Response{}
 	//beforeRequest hook
 	if beforeReqHook == `` {
 		beforeReqHook = `beforeRequest`
 	} else {
 		if _, ok := hookMap[beforeReqHook]; !ok {
-			log.Printf(`hook not found [%s],use default`, beforeReqHook)
+			log.Info(`hook not found [`, beforeReqHook, `],use default`)
 			beforeReqHook = `beforeRequest`
 		}
 	}
@@ -80,7 +79,7 @@ func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespH
 		afterRespHook = `afterResponse`
 	} else {
 		if _, ok := hookMap[afterRespHook]; !ok {
-			log.Printf(`hook not found [%s],use default`, afterRespHook)
+			log.Info(`hook not found [`, afterRespHook, `],use default`)
 			afterRespHook = `afterResponse`
 		}
 	}
@@ -98,9 +97,9 @@ func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespH
 	} else {
 		body, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			log.Printf("%v\n", err)
+			log.Info(err.Error())
 		} else {
-			//			log.Println(string(body))
+			//			log.Info(string(body))
 		}
 		resp.Code = response.StatusCode
 		resp.Header = response.Header
@@ -115,7 +114,7 @@ func (this *requests) doRequest(request *http.Request, beforeReqHook, afterRespH
 func (this *requests) BuildRequest(url, method string, params models.Params, header models.Header) *http.Request {
 	//构造请求体
 	// TODO 加上文件上传
-	log.Println("BuildRequest:", params)
+	log.Info("BuildRequest:", params)
 	var data string
 	switch method {
 	case `GET`:
@@ -126,7 +125,7 @@ func (this *requests) BuildRequest(url, method string, params models.Params, hea
 	bodyData := bytes.NewBuffer([]byte(data)) //get方法默认是空字符串
 	req, err := http.NewRequest(method, url, bodyData)
 	if err != nil {
-		log.Printf(`BuildRequest error %v\n`, err.Error())
+		log.Info(`BuildRequest error `, err.Error())
 	}
 	if method == `GET` {
 		req.URL.RawQuery = data
@@ -140,7 +139,7 @@ func (this *requests) BuildRequest(url, method string, params models.Params, hea
 
 func (this *requests) BuildPostFiles(url string, mpf models.MultipartFile, header models.Header) *http.Request {
 	//构造文件上传的请求体
-	log.Println("BuildPostFiles:", mpf)
+	log.Info("BuildPostFiles:", mpf)
 	bodyBuf := bytes.NewBufferString(``)
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	// boundary默认会提供一组随机数，也可以自己设置。
@@ -156,11 +155,11 @@ func (this *requests) BuildPostFiles(url string, mpf models.MultipartFile, heade
 		filePath := v.(string)
 		_, err := bodyWriter.CreateFormFile(k, filePath)
 		if err != nil {
-			log.Panicf("create post file[%s] error,%s", filePath, err.Error())
+			log.Fatal("create post file[", filePath, "] error", err.Error())
 		}
 		content, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			log.Panicf("ReadFile [%s] error,%s", filePath, err.Error())
+			log.Fatal("ReadFile [", filePath, "] error", err.Error())
 		}
 		bodyBuf.Write(content)
 
@@ -170,7 +169,8 @@ func (this *requests) BuildPostFiles(url string, mpf models.MultipartFile, heade
 	reqReader := io.MultiReader(bodyBuf)
 	req, err := http.NewRequest("POST", url, reqReader)
 	if err != nil {
-		log.Panicf(`BuildPostFiles error %v\n`, err.Error())
+		log.Fatal(`BuildPostFiles error `, err.Error())
+
 	}
 
 	// add header
@@ -184,7 +184,7 @@ func (this *requests) BuildPostFiles(url string, mpf models.MultipartFile, heade
 	}
 	// req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 	req.ContentLength = int64(bodyBuf.Len())
-	log.Printf("request len:", req.ContentLength)
+	log.Info("request len:", req.ContentLength)
 	return req
 }
 

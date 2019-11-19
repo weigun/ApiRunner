@@ -2,12 +2,14 @@
 package main
 
 import (
+	_ "ApiRunner/business"
 	_ "ApiRunner/dao"
 	_ "ApiRunner/models"
-	"log"
+	"ApiRunner/utils/logger"
 )
 
-func initGlobalComponents() {
-	log.Println(`initGlobalComponents`)
+var log = logger.GetLogger(nil, `MAIN`)
 
+func initGlobalComponents() {
+	log.Info(`initGlobalComponents`)
 }

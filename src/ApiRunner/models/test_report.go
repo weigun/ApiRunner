@@ -2,17 +2,12 @@
 package models
 
 import (
+	"fmt"
 	"io/ioutil"
-	//std
-	// "fmt"
-	"ApiRunner/models/young"
-	"log"
 	"net/http"
 	"time"
-	//third party
-	// "github.com/json-iterator/go"
-	//"ApiRunner/models"
-	// "encoding/json"
+
+	"ApiRunner/models/young"
 )
 
 // var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -59,7 +54,7 @@ func (s *Status) Count(stat int64) {
 	case SKIP:
 		s.Skip += 1
 	default:
-		log.Printf(`unknow stat %T,%v`, stat, stat)
+		log.Warning(fmt.Sprintf(`unknow stat %T,%v`, stat, stat))
 	}
 }
 
@@ -105,7 +100,7 @@ func (rp *Report) AddDetail(detail Detail) {
 func (rp *Report) Json() string {
 	jsonStr, err := json.Marshal(rp)
 	if err != nil {
-		log.Println(`Report to json failed:`, err.Error())
+		log.Info(`Report to json failed:`, err.Error())
 		return `{}`
 	}
 	return string(jsonStr)

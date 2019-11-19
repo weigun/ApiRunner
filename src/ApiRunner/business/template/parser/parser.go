@@ -2,7 +2,7 @@ package parser
 
 import (
 	// "errors"
-	"fmt"
+	// "fmt"
 
 	// "strings"
 
@@ -55,7 +55,7 @@ func (t *Tree) getToken() *lexer.Token {
 	token := t.lex.NextToken()
 	t.preToken = t.curToken
 	t.curToken = &token
-	fmt.Println(`got token:`, token.Typ, token.Val)
+	log.Debug(`got token:`, token.Typ, token.Val)
 	return &token
 }
 
@@ -127,7 +127,7 @@ func parseToken(t *Tree) parseFn {
 	case lexer.TokenRightDelim:
 		return parseRightDelim
 	default:
-		fmt.Println(`ignore token `, t.curToken)
+		log.Debug(`ignore token `, t.curToken)
 		t.ignore()
 		return parseToken
 	}
@@ -135,7 +135,7 @@ func parseToken(t *Tree) parseFn {
 
 func parseField(t *Tree) parseFn {
 	index := len(t.fields) - 1
-	fmt.Println(`parseField index:`, index)
+	log.Debug(`parseField index:`, index)
 	fieldNodeObj := &fieldNode{t.curToken}
 	t.addNode(fieldNodeObj)
 	t.fields[index] = append(t.fields[index], t.curToken.Val)
@@ -188,7 +188,7 @@ func parseRightDelim(t *Tree) parseFn {
 		//带参数的函数调用
 		t.funcs = append(t.funcs, map[string]interface{}{})
 	default:
-		fmt.Println(`not handle token `, t.preToken)
+		log.Debug(`not handle token `, t.preToken)
 	}
 	return startParse
 }

@@ -2,9 +2,6 @@
 package models
 
 import (
-	// "encoding/json"
-	"fmt"
-
 	"github.com/json-iterator/go"
 )
 
@@ -40,7 +37,7 @@ func (mf *MultipartFile) IsEnabled() bool {
 func (mf *MultipartFile) Json() string {
 	jsonStr, err := json.Marshal(mf)
 	if err != nil {
-		fmt.Println(`MultipartFile to json failed:`, err.Error())
+		log.Warning(`MultipartFile to json failed:`, err.Error())
 		return `{}`
 	}
 	return string(jsonStr)

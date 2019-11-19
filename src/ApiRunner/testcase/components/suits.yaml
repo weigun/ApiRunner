@@ -17,8 +17,8 @@ module:
         hooks: 
           beforeRequest: encrypt
           afterResponse: decrypt
-        retry: 3 #失败重试次数
-        repeat: 10  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
+        # retry: 1 #失败重试次数
+        # repeat: 2  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
 
     - node: 
         desc: new user b
@@ -29,8 +29,8 @@ module:
         hooks: 
           beforeRequest: encrypt
           afterResponse: decrypt
-        retry: 3 #失败重试次数
-        repeat: 10  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
+        # retry: 1 #失败重试次数
+        # repeat: 2  #该步骤重复执行多少次,如果有export，只会导出最后一次的结果
 
 
 

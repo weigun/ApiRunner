@@ -1,12 +1,6 @@
 // api.go
 package models
 
-import (
-	// "encoding/json"
-	"fmt"
-	// "github.com/json-iterator/go"
-)
-
 // var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type API struct {
@@ -27,7 +21,7 @@ func (api *API) GetName() string {
 func (api *API) Json() string {
 	jsonStr, err := json.Marshal(api)
 	if err != nil {
-		fmt.Println(`testcase to json failed:`, err.Error())
+		log.Warning(`testcase to json failed:`, err.Error())
 		return `{}`
 	}
 	return string(jsonStr)

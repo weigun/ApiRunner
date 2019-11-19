@@ -1,11 +1,6 @@
 // pipeline
 package models
 
-import (
-	// "encoding/json"
-	"fmt"
-)
-
 type Pipeline struct {
 	// Require []string `json:"require"  yaml:"require"`
 	// Module Module     `json:"module"  yaml:"module"`
@@ -23,7 +18,7 @@ func (pl *Pipeline) GetName() string {
 func (pl *Pipeline) Json() string {
 	jsonStr, err := json.Marshal(pl)
 	if err != nil {
-		fmt.Println(`testcase to json failed:`, err.Error())
+		log.Warning(`testcase to json failed:`, err.Error())
 		return `{}`
 	}
 	return string(jsonStr)

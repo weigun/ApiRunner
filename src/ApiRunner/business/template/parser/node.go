@@ -81,7 +81,7 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 				return convertValue(tmpData[fieldName])
 			}
 			// tmpData = tmpData[fieldName].(map[string]interface{})
-			fmt.Println(`field name:`, fieldName, tmpData)
+			log.Debug(`field name:`, fieldName, tmpData)
 			i++
 		}
 		return convertValue(tmpData)
@@ -94,15 +94,15 @@ func (n *containerNode) TranslateFrom(data interface{}, execFuncs interface{}) s
 			// v := n.subNodes[i].TranslateFrom(data, execFuncs)
 			nv := n.subNodes[i].(*paramNode)
 			v := nv.ValueFrom(data)
-			fmt.Println(v)
+			log.Debug(v)
 			args = append(args, v)
 		}
 		for _, v := range args {
-			fmt.Printf("type:%T,kind:%s,val:%v\n", v, v.Kind(), v)
+			log.Debug("type:%T,kind:%s,val:%v\n", v, v.Kind(), v)
 		}
 		return convertValue(fun.Call(args))
 	default:
-		fmt.Println(`unknow node in container`)
+		log.Debug(`unknow node in container`)
 		return ``
 	}
 }
@@ -112,7 +112,7 @@ func (n *containerNode) Expand(t Node) {
 	case lexer.TokenField, lexer.TokenFuncName, lexer.TokenRawParam, lexer.TokenVarParam:
 		n.subNodes = append(n.subNodes, t)
 	default:
-		fmt.Println(`not accept sub node`)
+		log.Debug(`not accept sub node`)
 	}
 }
 
@@ -138,7 +138,7 @@ func (n *funcNode) Type() int {
 }
 
 func (n *funcNode) TranslateFrom(data interface{}, execFuncs interface{}) string {
-	fmt.Println(n.Val)
+	log.Debug(n.Val)
 	return n.Val
 }
 
@@ -180,9 +180,9 @@ func (n *varNode) Type() int {
 
 func (n *varNode) TranslateFrom(data interface{}, execFuncs interface{}) string {
 	x := strings.Index(n.Val, `$`)
-	fmt.Println(n.Val[x+1:])
+	log.Debug(n.Val[x+1:])
 	val := data.(map[string]interface{})[n.Val[x+1:]]
-	fmt.Printf("%T,val:%v\n", val, val)
+	log.Debug("%T,val:%v\n", val, val)
 	return convertValue(val)
 }
 
@@ -208,7 +208,7 @@ func convertValue(data interface{}) string {
 	case string:
 		return data.(string)
 	default:
-		fmt.Printf("%T\n", data)
+		log.Debug("%T\n", data)
 	}
 	return fmt.Sprintf(`%v`, data)
 

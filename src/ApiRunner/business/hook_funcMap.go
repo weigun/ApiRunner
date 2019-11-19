@@ -1,23 +1,21 @@
 // hook_funcMap.go
 package business
 
-import (
-	"log"
-	// "net/http"
-	// "github.com/davecgh/go-spew/spew"
-)
+// "log"
+// "net/http"
+// "github.com/davecgh/go-spew/spew"
 
 var hookMap = make(map[string]hookFunc)
 
 func beforeRequest(req interface{}) interface{} {
-	log.Println(`hook beforeRequest trigger`)
+	log.Info(`hook beforeRequest trigger`)
 	// spew.Dump(req)
 	return req
 }
 
 func afterResponse(resp interface{}) interface{} {
-	log.Println(`hook afterResponse trigger`)
-	log.Println(resp)
+	log.Info(`hook afterResponse trigger`)
+	log.Info(resp)
 	// spew.Dump(resp)
 	return resp
 }

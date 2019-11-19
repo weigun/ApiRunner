@@ -4,7 +4,6 @@ package business
 import (
 	"context"
 	"fmt"
-	"log"
 	_ "net/url"
 
 	"regexp"
@@ -55,7 +54,7 @@ func NewTestRunner(id string, pipeObj models.Executable) *TestRunner {
 }
 
 func (r *TestRunner) Start() {
-	log.Println("testrunner started")
+	log.Info("testrunner started")
 	ctx, cancel := context.WithCancel(context.Background())
 	valueCtx := context.WithValue(ctx, `status`, r.Status)
 	r.canceler = cancel
@@ -63,7 +62,7 @@ func (r *TestRunner) Start() {
 		//TODO 需要保存堆栈
 		go execute(r) //用例执行
 		<-ctx.Done()
-		log.Println("runner done")
+		log.Info("runner done")
 		r.Status = ctx.Value(`status`).(int) //TODO 大丈夫？
 
 	}(valueCtx)
@@ -71,7 +70,7 @@ func (r *TestRunner) Start() {
 }
 
 func (r *TestRunner) Stop() {
-	log.Println("testrunner stopping")
+	log.Info("testrunner stopping")
 	r.Status = Canceled
 	r.canceler()
 	// TODO 干掉eventbus的channel
@@ -87,7 +86,6 @@ func execute(r *TestRunner) {
 	sum := models.NewSummary()
 	sum.StartAt = time.Now()
 	report.SetSummary(*sum)
-	// render := newRenderer(r.ID)
 	executePipeline(r)
 	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
 	//统计status
@@ -106,40 +104,40 @@ func execute(r *TestRunner) {
 	}
 
 	report.SetSummary(*sum)
-	log.Println(report.Json())
+	log.Info(report.Json())
 	// spew.Dump(r.refs)
 }
 
 func executePipeline(r *TestRunner) bool {
 	var isSucc bool
-	// log.Println(`dump def:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
+	// log.Info(`dump def:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
 	var newDef models.Variables
 	bDef := r.render.fillData(toJson(r.PipeObj.(*models.Pipeline).Def), nil)
 	json.Unmarshal(bDef, &newDef)
 	r.PipeObj.(*models.Pipeline).Def = newDef
 
 	// spew.Dump(r.PipeObj.(*models.Pipeline).Def)
-	log.Println(`dump newDef:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
+	log.Info(`dump newDef:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
 
 	//backup self so can revert after recursive
 	parentPipe := r.PipeObj.(*models.Pipeline)
 	parentRef := r.refs.Parent()
-	log.Println(`cur refs:`, r.refs)
-	log.Println(`parentRef:`, parentRef)
+	log.Info(`cur refs:`, r.refs)
+	log.Info(`parentRef:`, parentRef)
 
 	for index, execNode := range r.PipeObj.(*models.Pipeline).Steps {
 		if r.Status == Canceled {
 			// 如果runner的已经取消了，就没必要再去执行下一个用例了
-			log.Println(`executor stopping,because runner is canceled `)
+			log.Info(`executor stopping,because runner is canceled `)
 			return false
 		}
 		node := refNode.New(execNode.RefTag())
 		r.refs.AddChild(node)
 		//开始执行step
-		log.Println(`--------------step begin--------------------`)
+		log.Info(`--------------step begin--------------------`)
 		retryTimes := execNode.Retry
 		repeatTimes := execNode.Repeat
-		log.Printf("retryTimes:%d\trepeatTimes:%d\n", retryTimes, repeatTimes)
+		log.Info(fmt.Sprintf("retryTimes:%d\trepeatTimes:%d\n", retryTimes, repeatTimes))
 		for i := 0; i <= repeatTimes; i++ {
 			if !executeStep(&execNode, r, index) {
 				//if step failed
@@ -151,17 +149,17 @@ func executePipeline(r *TestRunner) bool {
 			}
 		}
 
-		log.Println(`--------------step end----------------------`)
+		log.Info(`--------------step end----------------------`)
 	}
 	r.refs = parentRef
 	r.PipeObj = parentPipe //revert self
-	log.Println(`after revert,cur refs:`, r.refs)
+	log.Info(`after revert,cur refs:`, r.refs)
 	return isSucc
 }
 
 func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 	var isSucc bool
-	log.Println(`exec step:`, execNode.Desc)
+	log.Info(`exec step:`, execNode.Desc)
 	pipeObj := r.PipeObj.(*models.Pipeline)
 	report := r.Reporter
 	requestor := NewRequestor()
@@ -190,7 +188,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 			apiObj.Params[k] = v
 		}
 		bheader := r.render.fillData(toJson(apiObj.Headers), pipeObj.Def)
-		log.Println(`pipeObj.Def:`, pipeObj.Def)
+		log.Info(`pipeObj.Def:`, pipeObj.Def)
 		json.Unmarshal(bheader, &header)
 		// render.renderObj(toJson(apiObj.Headers), true, &header)
 		var startTime time.Time
@@ -204,7 +202,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 
 		if apiObj.MultipartFile.IsEnabled() {
 			var mpf models.MultipartFile
-			log.Println(`parse MultipartFile:`, apiObj.MultipartFile.Json())
+			log.Info(`parse MultipartFile:`, apiObj.MultipartFile.Json())
 			bMpf := r.render.fillData(apiObj.MultipartFile.Json(), pipeObj.Def)
 			json.Unmarshal(bMpf, &mpf)
 			req := requestor.BuildPostFiles(url, mpf, header)
@@ -213,7 +211,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 			resp = requestor.doRequest(req, fnBeforeRequest, fnAfterResponse)
 		} else {
 			var params models.Params
-			log.Println(`parse Params:`, toJson(apiObj.Params))
+			log.Info(`parse Params:`, toJson(apiObj.Params))
 			bParams := r.render.fillData(toJson(apiObj.Params), pipeObj.Def)
 			json.Unmarshal(bParams, &params)
 
@@ -225,7 +223,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 			resp = requestor.doRequest(req, fnBeforeRequest, fnAfterResponse)
 		}
 		elapsed := time.Now().Sub(startTime).Nanoseconds()
-		log.Println(`got response:`, resp)
+		log.Info(`got response:`, resp)
 		record.Desc = execNode.Desc
 		record.Elapsed = elapsed / 1e6
 		record.Response = resp
@@ -249,7 +247,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 					//返回json则需要提取变量。这里非常简单的判断
 					bindVal := string(r.render.fillData(v, data))
 					ref.AddPairs(ek, bindVal)
-					log.Println("add ExportVars:", ek, bindVal)
+					log.Info("add ExportVars:", ek, bindVal)
 				} else {
 					//plain text
 					regx := regexp.MustCompile(v)
@@ -259,7 +257,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 						// services.VarsMgr.Add(fmt.Sprintf(`%s:%s`, render.tag, ek), strings.Join(match, `,`))
 						ref.AddPairs(ek, strings.Join(match, `,`))
 						// varsMgr.SetVar(this.Testcase.GetUid(), v.Name, strings.Join(match, `,`))
-						log.Println("add ExportVars:", ek, strings.Join(match, `,`))
+						log.Info("add ExportVars:", ek, strings.Join(match, `,`))
 					}
 				}
 			}
@@ -271,16 +269,16 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 			// TODO 渲染变量时，适配各种数据类型
 			validator.Check = validator.Actual.(string)
 			compare := getAssertByOp(validator.Op)
-			log.Println(`parse validator.Actual:`, validator.Actual.(string))
+			log.Info(`parse validator.Actual:`, validator.Actual.(string))
 			actual := string(r.render.fillData(validator.Actual.(string), data))
 
-			log.Println(`parse validator.Expected:`, validator.Expected.(string))
+			log.Info(`parse validator.Expected:`, validator.Expected.(string))
 			expected := string(r.render.fillData(validator.Expected.(string), pipeObj.Def))
 			isPassed := So(actual, compare, expected)
 			if !isPassed {
 				allPassed = false
 			}
-			log.Printf(`Actual:%v,Expected:%v,So %v`, actual, expected, isPassed)
+			log.Info(fmt.Sprintf(`Actual:%v,Expected:%v,So %v`, actual, expected, isPassed))
 			validator.Actual = actual
 			validator.Expected = expected
 			record.AddValidator(validator)
@@ -299,7 +297,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 	} else {
 		subPipeObj := execNode.Exec.(*models.Pipeline)
 		//先合并参数
-		// log.Println(`execNode.Args:`, spew.Sdump(execNode.Args))
+		// log.Info(`execNode.Args:`, spew.Sdump(execNode.Args))
 		for k, v := range execNode.Args {
 			subPipeObj.Def[k] = v
 		}
@@ -315,7 +313,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 		subPipeObj.Def = newDef
 		r.PipeObj = subPipeObj
 		r.refs = ref
-		log.Println(`replace def:`, subPipeObj.Def)
+		log.Info(`replace def:`, subPipeObj.Def)
 		isSucc = executePipeline(r)
 	}
 	if isSucc || execNode.Retry <= 0 {

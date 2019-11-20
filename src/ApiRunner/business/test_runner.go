@@ -30,22 +30,24 @@ const (
 )
 
 type TestRunner struct {
-	ID       string
-	PipeObj  models.Executable
-	Reporter *models.Report
-	canceler context.CancelFunc
-	render   *renderer
-	refs     refNode.Node //当前的引用
-	rootRefs refNode.Node //根引用
-	Status   int
+	ID        string
+	PipeObj   models.Executable
+	Reporter  *models.Report
+	canceler  context.CancelFunc
+	render    *renderer
+	refs      refNode.Node //当前的引用
+	rootRefs  refNode.Node //根引用
+	mementoes *mementoMgr
+	Status    int
 }
 
 func NewTestRunner(id string, pipeObj models.Executable) *TestRunner {
 	t := &TestRunner{
-		ID:      id,
-		PipeObj: pipeObj,
-		refs:    refNode.New(`root`),
-		render:  newRenderer(),
+		ID:        id,
+		PipeObj:   pipeObj,
+		refs:      refNode.New(`root`),
+		render:    newRenderer(),
+		mementoes: NewMementoMgr(),
 	}
 	t.refs.SetParent(t.refs)
 	t.rootRefs = t.refs
@@ -120,10 +122,10 @@ func executePipeline(r *TestRunner) bool {
 	log.Info(`dump newDef:`, spew.Sdump(r.PipeObj.(*models.Pipeline).Def))
 
 	//backup self so can revert after recursive
-	parentPipe := r.PipeObj.(*models.Pipeline)
-	parentRef := r.refs.Parent()
+	r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
+	r.mementoes.SaveMemento(&memento{r.refs.Parent()})
 	log.Info(`cur refs:`, r.refs)
-	log.Info(`parentRef:`, parentRef)
+	log.Info(`parentRef:`, r.refs.Parent())
 
 	for index, execNode := range r.PipeObj.(*models.Pipeline).Steps {
 		stepSuccCounter := 0
@@ -139,14 +141,16 @@ func executePipeline(r *TestRunner) bool {
 		retryTimes := execNode.Retry
 		repeatTimes := execNode.Repeat
 		log.Info(fmt.Sprintf("retryTimes:%d\trepeatTimes:%d\n", retryTimes, repeatTimes))
-		backupPipeObj := r.PipeObj.(*models.Pipeline)
+		// backupPipeObj := r.PipeObj.(*models.Pipeline)
+		r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
 		for i := 0; i <= repeatTimes; i++ {
 			if repeatTimes > 0 {
 				log.Info(fmt.Sprintf(`cur loop is %d`, i+1))
 				log.Info(`>>>>cur refs:`, r.refs)
 				log.Info(`>>>>cur pipeline:`, r.PipeObj)
 				if i > 0 {
-					r.PipeObj = backupPipeObj
+					r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline)
+					r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
 				}
 				// log.Info(spew.Sdump(r))
 			}
@@ -155,7 +159,8 @@ func executePipeline(r *TestRunner) bool {
 				// stepSuccCounter -= 1
 				for j := 0; j < retryTimes; j++ {
 					log.Info(fmt.Sprintf(`retry times %d,cur is %d`, retryTimes, j))
-					r.PipeObj = backupPipeObj
+					r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline)
+					r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
 					if executeStep(&execNode, r, index) {
 						stepSuccCounter += 1
 						break
@@ -172,8 +177,8 @@ func executePipeline(r *TestRunner) bool {
 		}
 
 	}
-	r.refs = parentRef
-	r.PipeObj = parentPipe //revert self
+	r.refs = r.mementoes.PopMementoWith(r.refs).GetState().(refNode.Node)
+	r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline) //revert self
 	log.Info(`after revert,cur refs:`, r.refs)
 	log.Info(`executePipeline result:`, isSucc)
 	return isSucc

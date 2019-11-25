@@ -37,7 +37,10 @@ func (m *mementoMgr) PopMementoWith(typ interface{}) Memento {
 	defer m.Unlock()
 	targetType := reflect.TypeOf(typ).Elem().Name()
 	log.Debug(fmt.Sprintf(`targettype:%s,%T`, targetType, reflect.TypeOf(typ).Elem()))
-	for i, tmp := range m.mementoList {
+	// for i, tmp := range m.mementoList {
+	for i := len(m.mementoList) - 1; i >= 0; i-- {
+		// 模拟栈先进后出
+		tmp := m.mementoList[i]
 		log.Debug(fmt.Sprintf(`tmp type:%s`, reflect.TypeOf(tmp.GetState()).Elem().Name()))
 		if reflect.TypeOf(tmp.GetState()).Elem().Name() == targetType {
 			m.mementoList = append(m.mementoList[0:i], m.mementoList[i+1:]...)

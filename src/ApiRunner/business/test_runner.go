@@ -19,6 +19,7 @@ import (
 
 	// "ApiRunner/services"
 	"ApiRunner/utils"
+	"ApiRunner/utils/helper"
 )
 
 const (
@@ -65,7 +66,7 @@ func (r *TestRunner) Start() {
 		go execute(r) //用例执行
 		<-ctx.Done()
 		log.Info("runner done")
-		r.Status = ctx.Value(`status`).(int) //TODO 大丈夫？
+		// TODO set status
 
 	}(valueCtx)
 
@@ -143,16 +144,13 @@ func executePipeline(r *TestRunner) bool {
 		log.Info(fmt.Sprintf("retryTimes:%d\trepeatTimes:%d\n", retryTimes, repeatTimes))
 		// backupPipeObj := r.PipeObj.(*models.Pipeline)
 		r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
-		for i := 0; i <= repeatTimes; i++ {
-			if repeatTimes > 0 {
-				log.Info(fmt.Sprintf(`cur loop is %d`, i+1))
-				log.Info(`>>>>cur refs:`, r.refs)
-				log.Info(`>>>>cur pipeline:`, r.PipeObj)
-				if i > 0 {
-					r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline)
-					r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
-				}
-				// log.Info(spew.Sdump(r))
+		helper.Apply(repeatTimes+1, func(curTime int) {
+			log.Info(fmt.Sprintf(`cur loop is %d`, curTime+1))
+			log.Info(`>>>>cur refs:`, r.refs)
+			log.Info(`>>>>cur pipeline:`, r.PipeObj)
+			if curTime > 0 {
+				r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline)
+				r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
 			}
 			if !executeStep(&execNode, r, index) {
 				//if step failed
@@ -169,8 +167,7 @@ func executePipeline(r *TestRunner) bool {
 			} else {
 				stepSuccCounter += 1
 			}
-		}
-
+		})
 		log.Info(`--------------step end----------------------`)
 		if stepSuccCounter != repeatTimes+1 {
 			isSucc = false

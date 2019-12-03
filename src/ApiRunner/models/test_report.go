@@ -25,8 +25,9 @@ const (
 type DateTime = time.Time
 
 type Report struct {
-	Summary Summary  `json:"summary"`
-	Details []Detail `json:"details"`
+	Summary Summary `json:"summary"`
+	// Details []Detail `json:"details"`
+	Details *ResultTree `json:"details"`
 }
 
 type Summary struct {
@@ -70,11 +71,41 @@ type Detail struct {
 
 type Record struct {
 	Stat       int64
-	Desc       string
+	Desc, Tag  string
 	Elapsed    int64 //ms
 	Request    *http.Request
 	Response   *young.Response
 	Validators []Validator
+}
+
+type ResultTree struct {
+	*Detail
+	parent   *ResultTree
+	children []*ResultTree
+}
+
+func (rt *ResultTree) Parent() *ResultTree {
+	return rt.parent
+}
+
+func (rt *ResultTree) SetParent(result *ResultTree) {
+	rt.parent = result
+}
+
+func (rt *ResultTree) Append(result *ResultTree) {
+	result.SetParent(rt)
+	rt.children = append(rt.children, result)
+}
+
+func (rt *ResultTree) ChildAt(index int) *ResultTree {
+	if index > len(rt.children) {
+		panic(`IndexError: list assignment index out of range`)
+	}
+	return rt.children[index]
+}
+
+func (rt *ResultTree) Len() int {
+	return len(rt.children)
 }
 
 type DataMap = map[string]interface{}
@@ -89,13 +120,14 @@ func (rp *Report) SetSummary(sum Summary) {
 	rp.Summary = sum
 }
 
-func (rp *Report) SetDetails(details []Detail) {
+func (rp *Report) SetDetails(details *ResultTree) {
 	rp.Details = details
 }
 
-func (rp *Report) AddDetail(detail Detail) {
-	rp.Details = append(rp.Details, detail)
-}
+// func (rp *Report) AddDetail(detail *ResultTree) {
+// 	// rp.Details = append(rp.Details, detail)
+// 	rp.Details = detail
+// }
 
 func (rp *Report) Json() string {
 	jsonStr, err := json.Marshal(rp)
@@ -104,6 +136,13 @@ func (rp *Report) Json() string {
 		return `{}`
 	}
 	return string(jsonStr)
+}
+
+func NewResultTree() *ResultTree {
+	rt := &ResultTree{}
+	rt.Detail = NewDetail()
+	rt.SetParent(rt)
+	return rt
 }
 
 // Summary
@@ -145,6 +184,10 @@ func (rc *Record) AddValidator(vd Validator) {
 	rc.Validators = append(rc.Validators, vd)
 }
 
+func (rc *Record) SetTag(tag string) {
+	rc.Tag = tag
+}
+
 func (rc *Record) MarshalJSON() ([]byte, error) {
 	//自定义编组过程
 	dict := make(DataMap)
@@ -152,6 +195,7 @@ func (rc *Record) MarshalJSON() ([]byte, error) {
 	resp := make(DataMap)
 	dict[`stat`] = rc.Stat
 	dict[`desc`] = rc.Desc
+	dict[`tag`] = rc.Tag
 	dict[`elapsed`] = rc.Elapsed
 	req[`url`] = rc.Request.URL.String()
 	req[`method`] = rc.Request.Method

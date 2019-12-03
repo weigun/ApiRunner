@@ -79,6 +79,22 @@ func (r *TestRunner) Stop() {
 	// TODO 干掉eventbus的channel
 }
 
+func StatusCounter(sum *models.Summary, dt *models.ResultTree) {
+	for _, record := range dt.Records {
+		sum.Status[1].Count(record.Stat)
+	}
+	if dt.Status.Error > 0 || dt.Status.Failed > 0 {
+		sum.Status[0].Count(models.FAILED)
+	} else {
+		sum.Status[0].Count(models.SUCCESS)
+	}
+	if dt.Len() > 0 {
+		for i := 0; i < dt.Len(); i++ {
+			StatusCounter(sum, dt.ChildAt(i))
+		}
+	}
+}
+
 func execute(r *TestRunner) {
 	//具体执行用例的实体函数
 	// pipeObj := r.PipeObj.(*models.Pipeline)
@@ -89,26 +105,31 @@ func execute(r *TestRunner) {
 	sum := models.NewSummary()
 	sum.StartAt = time.Now()
 	report.SetSummary(*sum)
+	detail := models.NewResultTree()
+	detail.SetParent(detail)
+	report.SetDetails(detail)
+	detail.Title = r.PipeObj.GetName()
 	executePipeline(r)
 	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
 	//统计status
-	for _, dt := range report.Details {
-		for _, record := range dt.Records {
-			// dt.Status.Count(record.Stat)
-			sum.Status[1].Count(record.Stat)
-		}
-		// report.Details[index] = dt
-		if dt.Status.Error > 0 || dt.Status.Failed > 0 {
-			sum.Status[0].Count(models.FAILED)
-		} else {
-			sum.Status[0].Count(models.SUCCESS)
-		}
+	StatusCounter(sum, detail)
+	// for _, dt := range report.Details {
+	// 	for _, record := range dt.Records {
+	// 		// dt.Status.Count(record.Stat)
+	// 		sum.Status[1].Count(record.Stat)
+	// 	}
+	// 	// report.Details[index] = dt
+	// 	if dt.Status.Error > 0 || dt.Status.Failed > 0 {
+	// 		sum.Status[0].Count(models.FAILED)
+	// 	} else {
+	// 		sum.Status[0].Count(models.SUCCESS)
+	// 	}
 
-	}
+	// }
 
 	report.SetSummary(*sum)
 	log.Info(report.Json())
-	// spew.Dump(r.refs)
+	spew.Dump(report)
 }
 
 func executePipeline(r *TestRunner) bool {
@@ -125,6 +146,7 @@ func executePipeline(r *TestRunner) bool {
 	//backup self so can revert after recursive
 	r.mementoes.SaveMemento(&memento{r.PipeObj.(*models.Pipeline)})
 	r.mementoes.SaveMemento(&memento{r.refs.Parent()})
+	r.mementoes.SaveMemento(&memento{r.Reporter.Details.Parent()})
 	log.Info(`cur refs:`, r.refs)
 	log.Info(`parentRef:`, r.refs.Parent())
 
@@ -137,6 +159,9 @@ func executePipeline(r *TestRunner) bool {
 		}
 		node := refNode.New(execNode.RefTag())
 		r.refs.AddChild(node)
+
+		detail := models.NewResultTree()
+		r.Reporter.Details.Append(detail)
 		//开始执行step
 		log.Info(`--------------step begin--------------------`)
 		retryTimes := execNode.Retry
@@ -174,6 +199,7 @@ func executePipeline(r *TestRunner) bool {
 		}
 
 	}
+	r.Reporter.Details = r.mementoes.PopMementoWith(r.Reporter.Details).GetState().(*models.ResultTree)
 	r.refs = r.mementoes.PopMementoWith(r.refs).GetState().(refNode.Node)
 	r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline) //revert self
 	log.Info(`after revert,cur refs:`, r.refs)
@@ -183,12 +209,13 @@ func executePipeline(r *TestRunner) bool {
 
 func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 	var isSucc bool
-	log.Info(`exec step:`, execNode.Desc)
+	log.Info(`exec step:`, execNode.Desc, ` rindex:`, rindex)
 	pipeObj := r.PipeObj.(*models.Pipeline)
 	report := r.Reporter
 	requestor := NewRequestor()
 	ref := r.refs.ChildAt(rindex) //user1 signup login
-	detail := models.NewDetail()
+	detail := report.Details.ChildAt(rindex)
+	// detail := models.NewDetail()
 	detail.Title = pipeObj.Name
 	if execNode.Host == `` {
 		execNode.Host = pipeObj.Host
@@ -337,12 +364,14 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 		subPipeObj.Def = newDef
 		r.PipeObj = subPipeObj
 		r.refs = ref
+		report.Details = detail
 		log.Info(`replace def:`, subPipeObj.Def)
 		isSucc = executePipeline(r)
 	}
 	if isSucc || execNode.Retry <= 0 {
 		if execNode.Repeat <= 0 {
-			report.AddDetail(*detail)
+			// report.AddDetail(*detail)
+			// detail.
 		}
 	}
 	return isSucc

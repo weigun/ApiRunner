@@ -85,7 +85,7 @@ func StatusCounter(sum *models.Summary, dt *models.ResultTree) {
 	}
 	if dt.Status.Error > 0 || dt.Status.Failed > 0 {
 		sum.Status[0].Count(models.FAILED)
-	} else {
+	} else if dt.Status.Success > 0 || dt.Status.Skip > 0 {
 		sum.Status[0].Count(models.SUCCESS)
 	}
 	if dt.Len() > 0 {
@@ -113,23 +113,10 @@ func execute(r *TestRunner) {
 	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
 	//统计status
 	StatusCounter(sum, detail)
-	// for _, dt := range report.Details {
-	// 	for _, record := range dt.Records {
-	// 		// dt.Status.Count(record.Stat)
-	// 		sum.Status[1].Count(record.Stat)
-	// 	}
-	// 	// report.Details[index] = dt
-	// 	if dt.Status.Error > 0 || dt.Status.Failed > 0 {
-	// 		sum.Status[0].Count(models.FAILED)
-	// 	} else {
-	// 		sum.Status[0].Count(models.SUCCESS)
-	// 	}
-
-	// }
 
 	report.SetSummary(*sum)
 	log.Info(report.Json())
-	spew.Dump(report)
+	// spew.Dump(report)
 }
 
 func executePipeline(r *TestRunner) bool {
@@ -149,6 +136,8 @@ func executePipeline(r *TestRunner) bool {
 	r.mementoes.SaveMemento(&memento{r.Reporter.Details.Parent()})
 	log.Info(`cur refs:`, r.refs)
 	log.Info(`parentRef:`, r.refs.Parent())
+	log.Info(`cur detail:`, r.Reporter.Details)
+	log.Info(`parent detail:`, r.Reporter.Details.Parent())
 
 	for index, execNode := range r.PipeObj.(*models.Pipeline).Steps {
 		stepSuccCounter := 0
@@ -161,6 +150,7 @@ func executePipeline(r *TestRunner) bool {
 		r.refs.AddChild(node)
 
 		detail := models.NewResultTree()
+		detail.Title = execNode.Desc
 		r.Reporter.Details.Append(detail)
 		//开始执行step
 		log.Info(`--------------step begin--------------------`)
@@ -203,6 +193,7 @@ func executePipeline(r *TestRunner) bool {
 	r.refs = r.mementoes.PopMementoWith(r.refs).GetState().(refNode.Node)
 	r.PipeObj = r.mementoes.PopMementoWith(r.PipeObj).GetState().(*models.Pipeline) //revert self
 	log.Info(`after revert,cur refs:`, r.refs)
+	log.Info(`after revert,cur detail:`, r.Reporter.Details)
 	log.Info(`executePipeline result:`, isSucc)
 	return isSucc
 }
@@ -211,12 +202,10 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 	var isSucc bool
 	log.Info(`exec step:`, execNode.Desc, ` rindex:`, rindex)
 	pipeObj := r.PipeObj.(*models.Pipeline)
-	report := r.Reporter
+	// report := r.Reporter
 	requestor := NewRequestor()
 	ref := r.refs.ChildAt(rindex) //user1 signup login
-	detail := report.Details.ChildAt(rindex)
-	// detail := models.NewDetail()
-	detail.Title = pipeObj.Name
+	detail := r.Reporter.Details.ChildAt(rindex)
 	if execNode.Host == `` {
 		execNode.Host = pipeObj.Host
 	}
@@ -364,7 +353,7 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 		subPipeObj.Def = newDef
 		r.PipeObj = subPipeObj
 		r.refs = ref
-		report.Details = detail
+		r.Reporter.Details = detail
 		log.Info(`replace def:`, subPipeObj.Def)
 		isSucc = executePipeline(r)
 	}

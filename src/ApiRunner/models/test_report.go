@@ -71,7 +71,7 @@ type Detail struct {
 
 type Record struct {
 	Stat       int64
-	Desc, Tag  string
+	Desc       string
 	Elapsed    int64 //ms
 	Request    *http.Request
 	Response   *young.Response
@@ -81,7 +81,7 @@ type Record struct {
 type ResultTree struct {
 	*Detail
 	parent   *ResultTree
-	children []*ResultTree
+	Children []*ResultTree
 }
 
 func (rt *ResultTree) Parent() *ResultTree {
@@ -94,18 +94,18 @@ func (rt *ResultTree) SetParent(result *ResultTree) {
 
 func (rt *ResultTree) Append(result *ResultTree) {
 	result.SetParent(rt)
-	rt.children = append(rt.children, result)
+	rt.Children = append(rt.Children, result)
 }
 
 func (rt *ResultTree) ChildAt(index int) *ResultTree {
-	if index > len(rt.children) {
+	if index > len(rt.Children) {
 		panic(`IndexError: list assignment index out of range`)
 	}
-	return rt.children[index]
+	return rt.Children[index]
 }
 
 func (rt *ResultTree) Len() int {
-	return len(rt.children)
+	return len(rt.Children)
 }
 
 type DataMap = map[string]interface{}
@@ -151,13 +151,6 @@ func NewSummary() *Summary {
 	return &Summary{Status: make([]Status, 2)}
 }
 
-func (sum *Summary) Counter(which int64) *Status {
-	if which == TESTSUITS {
-		return &sum.Status[0]
-	}
-	return &sum.Status[1]
-}
-
 // Details
 func NewDetail() *Detail {
 	return &Detail{Status: Status{}}
@@ -184,10 +177,6 @@ func (rc *Record) AddValidator(vd Validator) {
 	rc.Validators = append(rc.Validators, vd)
 }
 
-func (rc *Record) SetTag(tag string) {
-	rc.Tag = tag
-}
-
 func (rc *Record) MarshalJSON() ([]byte, error) {
 	//自定义编组过程
 	dict := make(DataMap)
@@ -195,7 +184,6 @@ func (rc *Record) MarshalJSON() ([]byte, error) {
 	resp := make(DataMap)
 	dict[`stat`] = rc.Stat
 	dict[`desc`] = rc.Desc
-	dict[`tag`] = rc.Tag
 	dict[`elapsed`] = rc.Elapsed
 	req[`url`] = rc.Request.URL.String()
 	req[`method`] = rc.Request.Method

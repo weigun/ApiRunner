@@ -81,9 +81,9 @@ func (r *TestRunner) Stop() {
 
 func StatusCounter(sum *models.Summary, dt *models.ResultTree) {
 	for _, record := range dt.Records {
-		sum.Status[1].Count(record.Stat)
+		sum.Status[1].Count(record.Stat) //step
 	}
-	if dt.Status.Error > 0 || dt.Status.Failed > 0 {
+	if dt.Status.Error > 0 || dt.Status.Failed > 0 { //testcase
 		sum.Status[0].Count(models.FAILED)
 	} else if dt.Status.Success > 0 || dt.Status.Skip > 0 {
 		sum.Status[0].Count(models.SUCCESS)

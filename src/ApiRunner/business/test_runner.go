@@ -85,7 +85,7 @@ func statusCounter(sum *models.Summary, dt *models.ResultTree, rootFlag bool) {
 		//如果有任一failed的，那个父节点及其祖先也是failed的
 		if dt.Record.Stat == models.FAILED || dt.Record.Stat == models.ERROR {
 			if dt.Parent().Status != models.FAILED {
-				for parent := dt.Parent(); parent != nil; {
+				for parent := dt.Parent(); ; {
 					parent.Status = models.FAILED
 					if parent.Parent() == parent {
 						break

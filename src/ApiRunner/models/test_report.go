@@ -134,6 +134,37 @@ func (rp *Report) SetDetails(details *ResultTree) {
 	rp.Details = details
 }
 
+func (rp *Report) StatusCount() {
+	statusCounter(&rp.Summary, rp.Details, true)
+}
+
+func statusCounter(sum *Summary, dt *ResultTree, rootFlag bool) {
+	if dt.Record != nil {
+		sum.Status[1].Count(dt.Record.Stat) //step
+		//如果有任一failed的，那个父节点及其祖先也是failed的
+		if dt.Record.Stat == FAILED || dt.Record.Stat == ERROR {
+			if dt.Parent().Status != FAILED {
+				for parent := dt.Parent(); ; {
+					parent.Status = FAILED
+					if parent.Parent() == parent {
+						break
+					}
+					parent = parent.Parent()
+				}
+			}
+		}
+		dt.Status = dt.Record.Stat
+	}
+	if dt.Len() > 0 {
+		for i := 0; i < dt.Len(); i++ {
+			statusCounter(sum, dt.ChildAt(i), false)
+			if rootFlag {
+				sum.Status[0].Count(dt.ChildAt(i).Status)
+			}
+		}
+	}
+}
+
 func (rp *Report) Json() string {
 	jsonStr, err := json.Marshal(rp)
 	if err != nil {

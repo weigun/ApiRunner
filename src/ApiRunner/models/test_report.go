@@ -64,9 +64,9 @@ func (s *Status) Total() int64 {
 }
 
 type Detail struct {
-	Title   string
-	Status  Status
-	Records []Record
+	Title  string
+	Status int64
+	Record *Record
 }
 
 type Record struct {
@@ -81,7 +81,7 @@ type Record struct {
 type ResultTree struct {
 	*Detail
 	parent   *ResultTree
-	Children []*ResultTree
+	children []*ResultTree
 }
 
 func (rt *ResultTree) Parent() *ResultTree {
@@ -94,18 +94,28 @@ func (rt *ResultTree) SetParent(result *ResultTree) {
 
 func (rt *ResultTree) Append(result *ResultTree) {
 	result.SetParent(rt)
-	rt.Children = append(rt.Children, result)
+	rt.children = append(rt.children, result)
 }
 
 func (rt *ResultTree) ChildAt(index int) *ResultTree {
-	if index > len(rt.Children) {
+	if index > len(rt.children) {
 		panic(`IndexError: list assignment index out of range`)
 	}
-	return rt.Children[index]
+	return rt.children[index]
 }
 
 func (rt *ResultTree) Len() int {
-	return len(rt.Children)
+	return len(rt.children)
+}
+
+func (rt *ResultTree) MarshalJSON() ([]byte, error) {
+	//自定义编组过程
+	dict := make(DataMap)
+	dict[`title`] = rt.Title
+	dict[`status`] = rt.Status
+	dict[`records`] = rt.Record
+	dict[`children`] = rt.children
+	return json.Marshal(dict)
 }
 
 type DataMap = map[string]interface{}
@@ -123,11 +133,6 @@ func (rp *Report) SetSummary(sum Summary) {
 func (rp *Report) SetDetails(details *ResultTree) {
 	rp.Details = details
 }
-
-// func (rp *Report) AddDetail(detail *ResultTree) {
-// 	// rp.Details = append(rp.Details, detail)
-// 	rp.Details = detail
-// }
 
 func (rp *Report) Json() string {
 	jsonStr, err := json.Marshal(rp)
@@ -153,16 +158,16 @@ func NewSummary() *Summary {
 
 // Details
 func NewDetail() *Detail {
-	return &Detail{Status: Status{}}
+	return &Detail{Status: 0}
 }
 
-func (dt *Detail) SetRecords(records []Record) {
-	dt.Records = records
+func (dt *Detail) SetRecord(record *Record) {
+	dt.Record = record
 }
 
-func (dt *Detail) AddRecord(record Record) {
-	dt.Records = append(dt.Records, record)
-}
+// func (dt *Detail) AddRecord(record Record) {
+// 	dt.Record = append(dt.Record, record)
+// }
 
 // Record
 func NewRecord() *Record {

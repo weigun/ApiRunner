@@ -79,18 +79,29 @@ func (r *TestRunner) Stop() {
 	// TODO 干掉eventbus的channel
 }
 
-func StatusCounter(sum *models.Summary, dt *models.ResultTree) {
-	for _, record := range dt.Records {
-		sum.Status[1].Count(record.Stat) //step
-	}
-	if dt.Status.Error > 0 || dt.Status.Failed > 0 { //testcase
-		sum.Status[0].Count(models.FAILED)
-	} else if dt.Status.Success > 0 || dt.Status.Skip > 0 {
-		sum.Status[0].Count(models.SUCCESS)
+func statusCounter(sum *models.Summary, dt *models.ResultTree, rootFlag bool) {
+	if dt.Record != nil {
+		sum.Status[1].Count(dt.Record.Stat) //step
+		//如果有任一failed的，那个父节点及其祖先也是failed的
+		if dt.Record.Stat == models.FAILED || dt.Record.Stat == models.ERROR {
+			if dt.Parent().Status != models.FAILED {
+				for parent := dt.Parent(); parent != nil; {
+					parent.Status = models.FAILED
+					if parent.Parent() == parent {
+						break
+					}
+					parent = parent.Parent()
+				}
+			}
+		}
+		dt.Status = dt.Record.Stat
 	}
 	if dt.Len() > 0 {
 		for i := 0; i < dt.Len(); i++ {
-			StatusCounter(sum, dt.ChildAt(i))
+			statusCounter(sum, dt.ChildAt(i), false)
+			if rootFlag {
+				sum.Status[0].Count(dt.ChildAt(i).Status)
+			}
 		}
 	}
 }
@@ -112,11 +123,12 @@ func execute(r *TestRunner) {
 	executePipeline(r)
 	sum.Duration = time.Now().Sub(sum.StartAt).Nanoseconds() / 1e6
 	//统计status
-	StatusCounter(sum, detail)
+	statusCounter(sum, detail, true)
 
 	report.SetSummary(*sum)
-	log.Info(report.Json())
 	// spew.Dump(report)
+	log.Info(report.Json())
+
 }
 
 func executePipeline(r *TestRunner) bool {
@@ -218,9 +230,9 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 	var header models.Header
 	var resp *young.Response
 
-	record := models.NewRecord()
 	if execNode.Exec.GetType() == models.TYPE_API {
 		//只是执行接口
+		record := models.NewRecord()
 		apiObj := execNode.Exec.(*models.API)
 		url := fmt.Sprintf(`%s/%s`, execNode.Host, apiObj.Path)
 		//先合并参数
@@ -330,8 +342,9 @@ func executeStep(execNode *models.ExecNode, r *TestRunner, rindex int) bool {
 		} else {
 			record.Stat = models.FAILED
 		}
-		detail.AddRecord(*record)
-		detail.Status.Count(record.Stat)
+		detail.SetRecord(record)
+		// detail.Status.Count(record.Stat)
+		// detail.Status = record.Stat
 		execNode.Retry -= 1
 		execNode.Repeat -= 1
 	} else {

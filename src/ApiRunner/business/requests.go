@@ -43,6 +43,34 @@ func makeClient() {
 	})
 }
 
+type Req struct {
+	method, url string
+	body        io.Reader
+	header      models.Header
+	params      models.Params
+	mpf         models.MultipartFile
+}
+
+func (r *Req) Send() (*http.Response, error) {
+	return nil, nil
+}
+func (r *Req) SetMethod(method string) {
+	r.method = method
+}
+func (r *Req) SetUrl(url string) {
+	r.url = url
+}
+func (r *Req) SetParams(params models.Params) {
+	r.params = params
+}
+func (r *Req) SetMultipartFile(mpf models.MultipartFile) {
+	r.mpf = mpf
+}
+
+type Resp struct {
+	*young.Response
+}
+
 type requests struct {
 	client *http.Client
 }
